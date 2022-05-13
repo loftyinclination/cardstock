@@ -1,0 +1,76 @@
+body {
+    font-family: system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji";
+    margin: 0;
+    --max-width: 768px;
+    --section-width: 280px;
+}
+
+.header__container {
+    width: 100%;
+    background-color: rgba(237,242,247);
+}
+
+.centered-section {
+    max-width: var(--max-width);
+    margin-inline: auto;
+}
+
+header { 
+    display: flex;
+    flex-direction: row;
+    box-sizing: border-box;
+    padding-inline: 1rem;
+}
+
+header > button {
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    font-size: 100%;
+}
+
+.sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0,0,0,0);
+	white-space: nowrap;
+	border-width: 0;
+}
+
+h1 {
+    flex-grow: 1;
+    font-weight: 600;
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+}
+
+main {
+    max-width: var(--max-width);
+    display: flex;
+    flex-direction: row;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    width: var(--section-width);
+}
+
+main > section {
+    box-sizing: border-box;
+    min-width: var(--section-width);
+}
+
+footer {
+    text-align: center;
+    color: rgb(113, 128, 150);
+    font-size: 0.875rem;
+    font-style: italic;
+    line-height: 1.25rem;
+}
+
+footer > a {
+    color: inherit;
+    text-decoration: inherit;
+}
