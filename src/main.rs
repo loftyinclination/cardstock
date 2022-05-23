@@ -1,12 +1,55 @@
+use askama::Template;
+use rocket::{get, launch, routes};
+use rocket::response::Debug;
+use rocket::http::ContentType;
+use rocket::response::content::RawHtml;
 use std::fs;
 use serde::{Deserialize};
 
-fn main() -> () {
+type ResponseResult<T> = std::result::Result<T, Debug<anyhow::Error>>;
+
+#[launch]
+fn rocket() -> _ {
+    rocket::build()
+        .mount(
+           "/",
+            routes![
+                index,
+                css,
+                cardstock,
+                manifest,
+            ],
+        )
+}
+
+#[get("/")]
+fn index() -> ResponseResult<RawHtml<String>> {
     let contents = fs::read_to_string("idols.json").unwrap();
 
     let idols_data: IdolsData = serde_json::from_str(&contents).unwrap();
+    let html_content = idols_data.items[0].data.render().map_err(anyhow::Error::from).unwrap();
+    Ok(RawHtml(html_content))
+}
 
-    println!("{}", idols_data.items[22819].valid_from);
+macro_rules! asset {
+    ($path:expr) => {
+        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/", $path))
+    };
+}
+
+#[get("/styles.css")]
+pub fn css() -> (ContentType, &'static str) {
+    (ContentType::CSS, asset!("/main.css"))
+}
+
+#[get("/cardstock.svg")]
+pub fn cardstock() -> (ContentType, &'static str) {
+    (ContentType::SVG, asset!("cardstock.svg"))
+}
+
+#[get("/manifest.webmanifest")]
+pub fn manifest() -> (ContentType, &'static str) {
+    (ContentType::JSON, asset!("manifest.webmanifest"))
 }
 
 #[derive(Deserialize)]
@@ -54,8 +97,9 @@ pub struct Data {
     pub strictly_confidential: i64,
 }
 
-#[derive(Clone, PartialEq, Deserialize)]
+#[derive(Clone, PartialEq, Deserialize, Template)]
 #[serde(untagged)]
+#[template(path = "home.html")]
 pub enum Idols {
     IdolArray(Vec<Idol>),
 
