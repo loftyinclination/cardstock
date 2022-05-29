@@ -1,34 +1,59 @@
 use askama::Template;
-use rocket::{get, launch, routes};
-use rocket::response::Debug;
+use rocket::fairing::AdHoc;
 use rocket::http::ContentType;
 use rocket::response::content::RawHtml;
+use rocket::response::Debug;
+use rocket::{get, launch, routes};
+use serde::Deserialize;
 use std::fs;
-use serde::{Deserialize};
 
 type ResponseResult<T> = std::result::Result<T, Debug<anyhow::Error>>;
 
 #[launch]
 fn rocket() -> _ {
-    rocket::build()
-        .mount(
-           "/",
-            routes![
-                index,
-                css,
-                cardstock,
-                manifest,
-            ],
-        )
+    rocket::build().mount("/", routes![index, css, cardstock, manifest,])
 }
 
 #[get("/")]
 fn index() -> ResponseResult<RawHtml<String>> {
     let contents = fs::read_to_string("idols.json").unwrap();
 
-    let idols_data: IdolsData = serde_json::from_str(&contents).unwrap();
-    let html_content = idols_data.items[0].data.render().map_err(anyhow::Error::from).unwrap();
+    let chron_idols_data: IdolsData = serde_json::from_str(&contents).unwrap();
+    let html_content = HomePage {
+        boards: chron_idols_data
+            .items
+            .into_iter()
+            .map(|x| {
+                let idols: Idols = x.data;
+                let idol_data: IdolsClass = match idols {
+                    Idols::IdolArray(array) => IdolsClass {
+                        data: Data {
+                            strictly_confidential: 20,
+                        },
+                        idols: array.into_iter().map(|y| y.player_id).collect(),
+                    },
+                    Idols::IdolsClass(idols_class) => idols_class,
+                };
+                (x.valid_from, idol_data)
+            })
+            .collect(),
+    }
+    .render()
+    .map_err(anyhow::Error::from)
+    .unwrap();
     Ok(RawHtml(html_content))
+}
+
+#[get("/season/<season>")]
+fn season(season: u8) -> ResponseResult<Option<RawHtml<String>>> {
+    Ok(match load_season(season)? {
+        Some(idol_boards) => Some(RawHtml(idol_boards.render().map_err(anyhow::Error::from)?)),
+        None => None,
+    })
+}
+
+fn load_season(season: u8) -> Result<Option<HomePage>, Debug<anyhow::Error>> {
+    Ok(None)
 }
 
 macro_rules! asset {
@@ -53,16 +78,16 @@ pub fn manifest() -> (ContentType, &'static str) {
 }
 
 #[derive(Deserialize)]
-#[serde(rename_all="camelCase")]
+#[serde(rename_all = "camelCase")]
 struct IdolsData {
     items: Vec<ChronV2Versions>,
 }
 
 #[derive(Deserialize)]
 struct ChronV2Versions {
-    #[serde(rename="validFrom")]
+    #[serde(rename = "validFrom")]
     valid_from: String,
-    #[serde(rename="validTo")]
+    #[serde(rename = "validTo")]
     valid_to: Option<String>,
     data: Idols,
 }
@@ -97,11 +122,16 @@ pub struct Data {
     pub strictly_confidential: i64,
 }
 
-#[derive(Clone, PartialEq, Deserialize, Template)]
+#[derive(Clone, PartialEq, Deserialize)]
 #[serde(untagged)]
-#[template(path = "home.html")]
 pub enum Idols {
     IdolArray(Vec<Idol>),
 
     IdolsClass(IdolsClass),
+}
+
+#[derive(Template)]
+#[template(path = "home.html")]
+struct HomePage {
+    boards: Vec<(String, IdolsClass)>,
 }
