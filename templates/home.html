@@ -1,7 +1,21 @@
 {% extends "base.html" %}
 
+<!-- prettier-ignore -->
 {% block content%}
-<section>
-    Home
+{% for (timestamp, board) in boards %}
+<section id="{{timestamp}}">
+  <h2>{{timestamp}}</h2>
+  <ol>
+    {% for idol in board.idols %}
+    <li>{{idol}}</li>
+    {% endfor %}
+  </ol>
+  {% if !loop.last %}
+  <a href="#{{boards[loop.index0 + 1].0}}">next</a>
+  <!-- prettier-ignore -->
+  {% endif %}
+  {% if !loop.first %}
+  <a href="#{{boards[loop.index0 - 1].0}}">previous</a>
+  {% endif %}
 </section>
-{% endblock %}
+{% endfor %} {% endblock %}
