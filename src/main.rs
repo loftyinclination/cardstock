@@ -23,13 +23,16 @@ lazy_static::lazy_static! {
 }
 
 // const CHRONICLER_BASE: &str = "https://api.sibr.dev/chronicler/";
-const GAMES_TREE: &str = "games_v1";
+const DAYS_TREE: &str = "games_v1";
 const NUMBER_OF_DAYS_FOR_SEASON_TREE: &str = "number_of_days_for_season_v1";
 
 const ZEROTH_SEASON_WITH_IDOL_BOARD: i16 = 4;
 
+const BEGINNING_OF_TIME: &str = "2020-01-01T00:00:00Z";
+const END_OF_TIME: &str = "2099-01-01T00:00:00Z";
+
 async fn start_task() -> Result<(), sled::Error> {
-    let game_tree = DB.open_tree(GAMES_TREE)?;
+    let days_tree = DB.open_tree(DAYS_TREE)?;
     let number_of_days_for_season_tree = DB.open_tree(NUMBER_OF_DAYS_FOR_SEASON_TREE)?;
 
     fn keep_greater_merge(
@@ -65,7 +68,7 @@ async fn start_task() -> Result<(), sled::Error> {
                 let data = game.data;
                 let mut key = data.season.to_be_bytes().to_vec();
                 key.extend(data.day.to_be_bytes());
-                game_tree.insert(&key, start_time.as_bytes())?;
+                days_tree.insert(&key, start_time.as_bytes())?;
 
                 number_of_days_for_season_tree
                     .merge(data.season.to_be_bytes(), (data.day + 1).to_be_bytes())?;
@@ -125,15 +128,66 @@ fn index() -> ResponseResult<RawHtml<String>> {
 }
 
 #[get("/season/<season>")]
-fn season(season: u8) -> ResponseResult<Option<RawHtml<String>>> {
-    Ok(match load_season(season)? {
-        Some(idol_boards) => Some(RawHtml(idol_boards.render().map_err(anyhow::Error::from)?)),
-        None => None,
-    })
+fn season(season: i16) -> ResponseResult<Option<RawHtml<String>>> {
+    Ok(
+        match load_season(season - 1).map_err(anyhow::Error::from)? {
+            Some(idol_boards) => Some(RawHtml(idol_boards.render().map_err(anyhow::Error::from)?)),
+            None => None,
+        },
+    )
 }
 
-fn load_season(season: u8) -> Result<Option<HomePage>, Debug<anyhow::Error>> {
-    Ok(None)
+fn load_season(season: i16) -> Result<Option<HomePage>, anyhow::Error> {
+    let number_of_days_for_season_tree = DB.open_tree(NUMBER_OF_DAYS_FOR_SEASON_TREE)?;
+    let number_of_days = number_of_days_for_season_tree.get(season.to_be_bytes())?;
+
+    if number_of_days.is_none() {
+        return Ok(None);
+    }
+
+    let number_of_days = number_of_days.unwrap();
+
+    let days_tree = DB.open_tree(DAYS_TREE)?;
+
+    let mut key = season.to_be_bytes().to_vec();
+    key.push(0);
+    let timestamp_of_first_day = days_tree
+        .get(&*key)?
+        .map(|v| std::str::from_utf8(&v).unwrap().to_string())
+        .unwrap_or(BEGINNING_OF_TIME.into());
+    key[2] = number_of_days[0];
+    let timestamp_of_last_day = days_tree
+        .get(&*key)?
+        .map(|v| std::str::from_utf8(&v).unwrap().to_string())
+        .unwrap_or(END_OF_TIME.into());
+
+    // FIXME: don't read the entire idols data structure here. honestly, what are you doing.
+    let contents = fs::read_to_string("idols.json").unwrap();
+
+    let chron_idols_data: IdolsData = serde_json::from_str(&contents).unwrap();
+    let page_content = HomePage {
+        boards: chron_idols_data
+            .items
+            .into_iter()
+            .filter(|x| {
+                timestamp_of_first_day <= x.valid_from && x.valid_from <= timestamp_of_last_day
+            })
+            .map(|x| {
+                let idols: Idols = x.data;
+                let idol_data: IdolsClass = match idols {
+                    Idols::IdolArray(array) => IdolsClass {
+                        data: Data {
+                            strictly_confidential: 20,
+                        },
+                        idols: array.into_iter().map(|y| y.player_id).collect(),
+                    },
+                    Idols::IdolsClass(idols_class) => idols_class,
+                };
+                (x.valid_from, idol_data)
+            })
+            .collect(),
+    };
+    Ok(Some(page_content))
 }
 
 macro_rules! asset {
