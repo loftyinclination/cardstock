@@ -1,17 +1,17 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width" />
-    <title>Cardstock</title>
-    <link rel="stylesheet" href="/styles.css" />
-    <link rel="icon" href="/cardstock.svg" />
-  </head>
-  <body>
-    <div class="header__container container">
-      <header class="centered-section">
-        <h1>Cardstock</h1>
-        <!-- <button>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width" />
+        <title>Cardstock</title>
+        <link rel="stylesheet" href="/styles.css" />
+        <link rel="icon" href="/cardstock.svg" />
+    </head>
+    <body>
+        <div class="header__container container">
+            <header class="centered-section">
+                <h1>Cardstock</h1>
+                <!-- <button>
         <span class="dark:hidden"
         >🌃<span class="sr-only">Dark mode</span></span
         >
@@ -19,17 +19,20 @@
         >🌇<span class="sr-only">Light mode</span></span
         >
         </button> -->
-      </header>
-    </div>
-    <main class="centered-section">
-      {% block content %}{% endblock %}
-    </main>
-    <footer>
-      Brought to you by the <a href='https://www.blaseball.com/team/d2634113-b650-47b9-ad95-673f8e28e687'>Data Witches</a>.
-      <br />
-      <a href="https://twitter.com/InclinedLight">Author</a> (@LoftyInclination) |
-      <a href="https://github.com/AlastairCodd/Cardstock">Github</a> |
-      <a href="https://discord.gg/XKppCuj">SIBR Discord</a>
-    </footer>
-  </body>
+            </header>
+        </div>
+        <main class="centered-section">{% block content %}{% endblock %}</main>
+        <footer>
+            Brought to you by the
+            <a
+                href="https://www.blaseball.com/team/d2634113-b650-47b9-ad95-673f8e28e687"
+                >Data Witches</a
+            >.
+            <br />
+            <a href="https://twitter.com/InclinedLight">Author</a>
+            (@LoftyInclination) |
+            <a href="https://github.com/AlastairCodd/Cardstock">Github</a> |
+            <a href="https://discord.gg/XKppCuj">SIBR Discord</a>
+        </footer>
+    </body>
 </html>

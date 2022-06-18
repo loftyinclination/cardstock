@@ -4,18 +4,25 @@
 {% block content%}
 {% for (timestamp, board) in boards %}
 <section id="{{timestamp}}">
-  <h2>{{timestamp}}</h2>
-  <ol>
-    {% for idol in board.idols %}
-    <li>{{idol}}</li>
-    {% endfor %}
-  </ol>
-  {% if !loop.last %}
-  <a href="#{{boards[loop.index0 + 1].0}}">next</a>
-  <!-- prettier-ignore -->
-  {% endif %}
-  {% if !loop.first %}
-  <a href="#{{boards[loop.index0 - 1].0}}">previous</a>
-  {% endif %}
+    <div class="idolboard">
+        <h2>{{timestamp}}</h2>
+        <ol>
+            {% for idol in board.idols %}
+            <li>
+                <div class="idolboard__name">{{idol}}</div>
+                <div class="idolboard__team__icon">TEAM</div>
+                <div class="idolboard__team__name">hellmouth sunbeams</div>
+            </li>
+            {% endfor %}
+        </ol>
+        <nav>
+            {% if !loop.first %}
+            <a class="nav__back" href="#{{boards[loop.index0 - 1].0}}">&lt;</a>
+            {% endif %} {% if !loop.last %}
+            <a class="nav__next" href="#{{boards[loop.index0 + 1].0}}">&gt;</a>
+            <!-- prettier-ignore -->
+            {% endif %}
+        </nav>
+    </div>
 </section>
 {% endfor %} {% endblock %}

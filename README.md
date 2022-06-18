@@ -7,13 +7,14 @@ Cardstock is written in Rust, using Rocket to deploy the server, and Askama to b
 Cardstock uses `git rebase` as a merge strategy -- try and make git commits atomic, and with descriptive comments, and try and rewrite history rather than creating a new commit with additional changes. PRs are welcome.
 
 ## roadmap
+
 1. version 0.2
     1. player names - bricks uses sled for this
         1. teams?
         1. ego? season 13 >
     1. better navigation
         1. next/previous season button
-        1. some indication of how much of a jump the next will be? 
+        1. some indication of how much of a jump the next will be?
         1. forward 1 hr? (if possible?)
         1. jump to postseason? election? not sure of nomenclature on this, or on how to do season->time conversion
     1. look and feel
