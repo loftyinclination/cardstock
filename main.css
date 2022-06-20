@@ -50,18 +50,101 @@ h1 {
 }
 
 main {
-    max-width: var(--max-width);
+    width: var(--section-width);
+
     display: flex;
     flex-direction: row;
     overflow-x: hidden;
-    width: var(--section-width);
 
     box-sizing: border-box;
 }
 
-main > section {
+section {
     box-sizing: border-box;
     min-width: var(--section-width);
+    width: 100%;
+}
+
+svg {
+    width: 560px;
+    grid-column-start: 1;
+    grid-column-end: 3;
+    margin-block: 0.25rem;
+}
+
+path { 
+    stroke: #ffbe00;
+    fill: transparent;
+}
+
+.idolboard {
+    display: grid;
+    grid-template-areas:
+        "header"
+        "idol-board"
+        "nav";
+}
+
+.idolboard > h2 {
+    grid-area: header;
+}
+
+.idolboard > ol {
+    grid-area: idol-board;
+    display: grid;
+    /*grid-template-columns: [position] 1fr [idol-name] 20fr [idol-team-icon] 2fr [idol-team-name] 35fr;*/
+    grid-template-columns: [idol-name] 20fr [idol-team-icon] 2fr [idol-team-name] 35fr;
+    column-gap: 1rem;
+}
+
+.idolboard > ol > li:nth-child(2n) {
+    background-color: #ddd;
+}
+
+.idolboard > ol > li {
+    display: grid;
+    grid-template-columns: subgrid;
+    grid-column-start: 1;
+    grid-column-end: 5;
+    border-radius: 0.5em;
+    padding-block: 0.5em;
+}
+
+.idolboard > ol > li:hover {
+    background: hsla(0,0%,39.6%,.6509803921568628);
+}
+
+.idolboard > ol > li:focus {
+    outline-style: solid;
+    z-index: 1;
+}
+
+.idolboard__name {
+    grid-area: idol-name;
+    padding-inline-start: 0.5em;
+}
+
+.idolboard__team__icon {
+    grid-area: idol-team-icon;
+}
+
+.idolboard__team__name {
+    grid-area: idol-team-name;
+    padding-inline-end: 0.5em;
+}
+
+.idolboard > nav {
+    grid-area: nav;
+    display: grid;
+    grid-template-columns: [nav-left] 1fr [nav-right] 1fr;
+}
+
+.nav__back {
+    grid-area: nav-left;
+}
+
+.nav__next {
+    grid-area: nav-right;
 }
 
 footer {
@@ -70,6 +153,7 @@ footer {
     font-size: 0.875rem;
     font-style: italic;
     line-height: 1.25rem;
+    padding-block-end: 1.25rem;
 }
 
 footer > a {
