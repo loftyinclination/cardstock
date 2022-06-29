@@ -7,11 +7,11 @@
     <div class="idolboard">
         <h2>{{timestamp}}</h2>
         <ol>
-            {% for idol in board.idols %}
+            {% for player in board %}
             <li>
-                <div class="idolboard__name">{{idol}}</div>
+                <div class="idolboard__name">{{player.name}}</div>
                 <div class="idolboard__team__icon">TEAM</div>
-                <div class="idolboard__team__name">hellmouth sunbeams</div>
+                <div class="idolboard__team__name">{{player.team_name}}</div>
             </li>
             {% endfor %}
         </ol>

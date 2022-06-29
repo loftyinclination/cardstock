@@ -6,12 +6,16 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0"
 askama = "0.11"
+chrono = { version = "0.4", features = ["serde"] }
 either = { version = "1.6.1", features = ["serde"] }
 lazy_static = "1.4"
 log = "0.4"
-#reqwest = { version = "0.11", features = ["json"] }
+reqwest = { version = "0.11", features = ["json"] }
 rocket = "0.5.0-rc.2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1.0"
 sled = { version = "0.34.7", features = ["compression"] }
 time = { version = "0.3", features = ["serde"] }
+uuid = { version = "1.1", features = ["serde"] }
+zerocopy = "0.6"
+

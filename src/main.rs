@@ -1,13 +1,16 @@
 use askama::Template;
-// use reqwest::Client;
+use chrono::{DateTime, FixedOffset, Utc};
+use reqwest::Client;
 use rocket::fairing::AdHoc;
 use rocket::http::ContentType;
 use rocket::response::content::RawHtml;
 use rocket::response::Debug;
 use rocket::{get, launch, routes};
-use serde::Deserialize;
-use sled::Db;
+use serde::{Deserialize, Serialize};
+use sled::{Db, Tree};
 use std::fs;
+use uuid::Uuid;
+use zerocopy::{AsBytes, BigEndian, FromBytes, I64};
 
 lazy_static::lazy_static! {
     static ref DB: Db = sled::Config::default()
@@ -16,42 +19,25 @@ lazy_static::lazy_static! {
         .open()
         .unwrap();
 
-    // static ref CLIENT: Client = Client::builder()
-        // .user_agent("cardstock/0.0 (lofty@sibr.dev)")
-        // .build()
-        // .unwrap();
+    static ref CLIENT: Client = Client::builder()
+        .user_agent("cardstock/0.0 (lofty@sibr.dev)")
+        .build()
+        .unwrap();
 }
 
-// const CHRONICLER_BASE: &str = "https://api.sibr.dev/chronicler/";
+const CHRONICLER_BASE: &str = "https://api.sibr.dev/chronicler";
+
 const DAYS_TREE: &str = "games_v1";
-const NUMBER_OF_DAYS_FOR_SEASON_TREE: &str = "number_of_days_for_season_v1";
+const PLAYER_TREE: &str = "players_v1";
+const IDOLS_TREE: &str = "idols_v1";
 
 const ZEROTH_SEASON_WITH_IDOL_BOARD: i16 = 4;
 
 const BEGINNING_OF_TIME: &str = "2020-01-01T00:00:00Z";
 const END_OF_TIME: &str = "2099-01-01T00:00:00Z";
 
-async fn start_task() -> Result<(), sled::Error> {
+async fn start_task() -> Result<(), anyhow::Error> {
     let days_tree = DB.open_tree(DAYS_TREE)?;
-    let number_of_days_for_season_tree = DB.open_tree(NUMBER_OF_DAYS_FOR_SEASON_TREE)?;
-
-    fn keep_greater_merge(
-        _key: &[u8],
-        old_value: Option<&[u8]>,
-        new_value: &[u8],
-    ) -> Option<Vec<u8>> {
-        if let Some(current_value) = old_value {
-            if current_value[0] > new_value[0] {
-                Some(current_value.to_vec())
-            } else {
-                Some(new_value.to_vec())
-            }
-        } else {
-            Some(new_value.to_vec())
-        }
-    }
-
-    number_of_days_for_season_tree.set_merge_operator(keep_greater_merge);
 
     // let games: GameData = CLIENT
     // .get(format!("{}/v1/games", CHRONICLER_BASE))
@@ -59,7 +45,7 @@ async fn start_task() -> Result<(), sled::Error> {
     // .await?
     // .json()
     // .await?;
-    let contents = fs::read_to_string("games.json").unwrap();
+    let contents = fs::read_to_string("data/games.json").unwrap();
 
     let games: GameData = serde_json::from_str(&contents).unwrap();
     for game in games.data.into_iter() {
@@ -68,15 +54,114 @@ async fn start_task() -> Result<(), sled::Error> {
                 let data = game.data;
                 let mut key = data.season.to_be_bytes().to_vec();
                 key.extend(data.day.to_be_bytes());
-                days_tree.insert(&key, start_time.as_bytes())?;
-
-                number_of_days_for_season_tree
-                    .merge(data.season.to_be_bytes(), (data.day + 1).to_be_bytes())?;
+                days_tree.insert(&key, start_time.to_rfc3339().as_bytes())?;
             }
         }
     }
 
+    let idols_tree = DB.open_tree(IDOLS_TREE)?;
+
+    let contents = fs::read_to_string("data/idols.json").unwrap();
+    log::info!("read idol board data from file");
+
+    let chron_idols_data: Chron2Response<Idols> = serde_json::from_str(&contents).unwrap();
+
+    let mut player_set = std::collections::HashSet::new();
+    let player_tree = DB.open_tree(PLAYER_TREE)?;
+
+    for idol_board_version in chron_idols_data.items.into_iter() {
+        let idol_data = match idol_board_version.data {
+            Idols::IdolArray(array) => IdolsClass {
+                data: Data {
+                    strictly_confidential: 20,
+                },
+                idols: array.into_iter().map(|y| y.player_id).collect(),
+            },
+            Idols::IdolsClass(idols_class) => idols_class,
+        };
+
+        log::info!(
+            "processed idol board data for timestamp {}",
+            idol_board_version.valid_from
+        );
+
+        for player in &idol_data.idols {
+            if player_set.contains(player) {
+                continue;
+            }
+
+            player_set.insert(player.clone());
+
+            if does_any_data_exist_in_tree_for_player(player, &player_tree) {
+                log::info!(
+                    "data exists for player {} in tree from previous run of cardstock",
+                    player
+                );
+                continue;
+            }
+
+            let url = format!(
+                "{}/v2/versions?type=Player&id={}",
+                CHRONICLER_BASE,
+                player.to_string()
+            );
+            log::info!("performing request to {}", url);
+
+            let player_versions: Chron2Response<PlayerData> =
+                CLIENT.get(url).send().await?.json().await?;
+
+            log::info!("got data for player {}", player);
+
+            for version in player_versions.items.into_iter() {
+                player_tree
+                    .insert(
+                        Key::new(*player, version.valid_from).as_bytes(),
+                        serde_json::to_vec(&version.data)?,
+                    )
+                    .expect("failed to insert player into db");
+            }
+        }
+
+        idols_tree
+            .insert(
+                idol_board_version.valid_from.to_rfc3339().as_bytes(),
+                serde_json::to_vec(&idol_data)?,
+            )
+            .expect("failed to insert idol into db");
+    }
+
     Ok(())
+}
+
+fn does_any_data_exist_in_tree_for_player(player: &Uuid, tree: &Tree) -> bool {
+    let result = tree
+        .get_lt(Key::new(*player, DateTime::parse_from_rfc3339(END_OF_TIME).unwrap()).as_bytes())
+        .unwrap();
+
+    match result {
+        Some((key_bytes, _)) => {
+            let player_in_key =
+                Uuid::from_slice(&Key::read_from(key_bytes.as_bytes()).unwrap().id).unwrap();
+            *player == player_in_key
+        }
+        None => false,
+    }
+}
+
+#[derive(AsBytes, FromBytes)]
+#[repr(C)]
+struct Key {
+    id: [u8; 16],
+    valid_from: I64<BigEndian>,
+}
+
+impl Key {
+    fn new<T: chrono::TimeZone>(id: Uuid, valid_from: DateTime<T>) -> Key {
+        Key {
+            id: *id.as_bytes(),
+            valid_from: valid_from.timestamp_nanos().into(),
+        }
+    }
 }
 
 type ResponseResult<T> = std::result::Result<T, Debug<anyhow::Error>>;
@@ -99,27 +184,11 @@ fn rocket() -> _ {
 
 #[get("/")]
 fn index() -> ResponseResult<RawHtml<String>> {
-    let contents = fs::read_to_string("idols.json").unwrap();
+    let idols_tree = DB.open_tree(IDOLS_TREE).map_err(anyhow::Error::from)?;
+    let player_tree = DB.open_tree(PLAYER_TREE).map_err(anyhow::Error::from)?;
 
-    let chron_idols_data: IdolsData = serde_json::from_str(&contents).unwrap();
     let html_content = HomePage {
-        boards: chron_idols_data
-            .items
-            .into_iter()
-            .map(|x| {
-                let idols: Idols = x.data;
-                let idol_data: IdolsClass = match idols {
-                    Idols::IdolArray(array) => IdolsClass {
-                        data: Data {
-                            strictly_confidential: 20,
-                        },
-                        idols: array.into_iter().map(|y| y.player_id).collect(),
-                    },
-                    Idols::IdolsClass(idols_class) => idols_class,
-                };
-                (x.valid_from, idol_data)
-            })
-            .collect(),
+        boards: convert_db_contents_into_format_for_page(idols_tree.iter(), player_tree),
     }
     .render()
     .map_err(anyhow::Error::from)
@@ -138,56 +207,92 @@ fn season(season: i16) -> ResponseResult<Option<RawHtml<String>>> {
 }
 
 fn load_season(season: i16) -> Result<Option<HomePage>, anyhow::Error> {
-    let number_of_days_for_season_tree = DB.open_tree(NUMBER_OF_DAYS_FOR_SEASON_TREE)?;
-    let number_of_days = number_of_days_for_season_tree.get(season.to_be_bytes())?;
+    let (timestamp_of_first_day, timestamp_of_last_day) = get_bounds_for_season(season)?;
 
-    if number_of_days.is_none() {
-        return Ok(None);
-    }
+    let idols_tree = DB.open_tree(IDOLS_TREE)?;
+    let player_tree = DB.open_tree(PLAYER_TREE).map_err(anyhow::Error::from)?;
 
-    let number_of_days = number_of_days.unwrap();
+    let page_content = HomePage {
+        boards: convert_db_contents_into_format_for_page(
+            idols_tree.range(
+                timestamp_of_first_day.to_rfc3339().as_bytes()
+                    ..timestamp_of_last_day.to_rfc3339().as_bytes(),
+            ),
+            player_tree,
+        ),
+    };
+    Ok(Some(page_content))
+}
 
+fn get_bounds_for_season(
+    season: i16,
+) -> Result<(DateTime<FixedOffset>, DateTime<FixedOffset>), anyhow::Error> {
     let days_tree = DB.open_tree(DAYS_TREE)?;
 
     let mut key = season.to_be_bytes().to_vec();
     key.push(0);
     let timestamp_of_first_day = days_tree
         .get(&*key)?
-        .map(|v| std::str::from_utf8(&v).unwrap().to_string())
-        .unwrap_or(BEGINNING_OF_TIME.into());
-    key[2] = number_of_days[0];
+        .map(|v| DateTime::parse_from_rfc3339(std::str::from_utf8(&v).unwrap()).unwrap())
+        .unwrap_or(DateTime::parse_from_rfc3339(BEGINNING_OF_TIME).unwrap());
+    key[2] = 0xFF;
     let timestamp_of_last_day = days_tree
-        .get(&*key)?
-        .map(|v| std::str::from_utf8(&v).unwrap().to_string())
-        .unwrap_or(END_OF_TIME.into());
+        .get_lt(&*key)?
+        .map(|(_, v)| DateTime::parse_from_rfc3339(std::str::from_utf8(&v).unwrap()).unwrap())
+        .unwrap_or(DateTime::parse_from_rfc3339(END_OF_TIME).unwrap());
 
-    // FIXME: don't read the entire idols data structure here. honestly, what are you doing.
-    let contents = fs::read_to_string("idols.json").unwrap();
+    Ok((timestamp_of_first_day, timestamp_of_last_day))
+}
 
-    let chron_idols_data: IdolsData = serde_json::from_str(&contents).unwrap();
-    let page_content = HomePage {
-        boards: chron_idols_data
-            .items
+fn convert_db_contents_into_format_for_page(
+    database_contents: sled::Iter,
+    player_tree: Tree,
+) -> Vec<(DateTime<FixedOffset>, Vec<PlayerDisplayable>)> {
+    database_contents
+        .map(|x| {
+            let result = x.unwrap();
+            let timestamp =
+                DateTime::parse_from_rfc3339(std::str::from_utf8(result.0.as_bytes()).unwrap())
+                    .unwrap();
+
+            let idols: Idols = serde_json::from_slice(result.1.as_bytes()).unwrap();
+            let idol_data = (match idols {
+                Idols::IdolArray(array) => {
+                    let player_ids: Vec<Uuid> = array.into_iter().map(|y| y.player_id).collect();
+                    player_ids
+                }
+                Idols::IdolsClass(idols_class) => idols_class.idols,
+            })
             .into_iter()
-            .filter(|x| {
-                timestamp_of_first_day <= x.valid_from && x.valid_from <= timestamp_of_last_day
-            })
-            .map(|x| {
-                let idols: Idols = x.data;
-                let idol_data: IdolsClass = match idols {
-                    Idols::IdolArray(array) => IdolsClass {
-                        data: Data {
-                            strictly_confidential: 20,
-                        },
-                        idols: array.into_iter().map(|y| y.player_id).collect(),
-                    },
-                    Idols::IdolsClass(idols_class) => idols_class,
-                };
-                (x.valid_from, idol_data)
-            })
-            .collect(),
-    };
-    Ok(Some(page_content))
+            .map(|player_id| get_displayable_data_for_player(player_id, timestamp, &player_tree))
+            .collect();
+            (timestamp, idol_data)
+        })
+        .collect()
+}
+
+fn get_displayable_data_for_player(
+    player_id: Uuid,
+    timestamp: DateTime<FixedOffset>,
+    player_tree: &Tree,
+) -> PlayerDisplayable {
+    let result = player_tree
+        .get_lt(Key::new(player_id, timestamp).as_bytes())
+        .unwrap()
+        .unwrap();
+
+    let result_id = Uuid::from_slice(&Key::read_from(result.0.as_bytes()).unwrap().id).unwrap();
+    assert!(result_id == player_id, "no data existed for player");
+
+    let player_data: PlayerData = serde_json::from_slice(result.1.as_bytes()).unwrap();
+
+    PlayerDisplayable {
+        id: player_id,
+        name: player_data.name,
+        team_name: "Hellmouth Sunbeams".to_string(),
+        deceased: player_data.deceased,
+        ego: 0,
+    }
 }
 
 macro_rules! asset {
@@ -219,59 +324,69 @@ struct GameData {
 #[derive(Deserialize)]
 struct Chron1Versions {
     #[serde(rename = "startTime")]
-    start_time: Option<String>,
-    #[serde(rename = "endTime")]
-    end_time: Option<String>,
+    start_time: Option<DateTime<Utc>>,
     data: Game,
 }
 
 #[derive(Deserialize)]
 struct Game {
-    #[serde(alias = "_id")]
-    id: String,
     day: u8,
     season: i16,
     sim: Option<String>,
 }
 
 #[derive(Deserialize)]
-struct IdolsData {
-    items: Vec<ChronV2Versions>,
+struct Chron2Response<T> {
+    items: Vec<ChronV2Versions<T>>,
 }
 
 #[derive(Deserialize)]
-struct ChronV2Versions {
+struct ChronV2Versions<T> {
     #[serde(rename = "validFrom")]
-    valid_from: String,
-    #[serde(rename = "validTo")]
-    valid_to: Option<String>,
-    data: Idols,
+    valid_from: DateTime<Utc>,
+    data: T,
 }
 
 #[derive(Clone, PartialEq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Idol {
     #[serde(rename = "id")]
-    pub id: Option<String>,
+    pub id: Option<Uuid>,
 
     #[serde(rename = "playerId")]
-    pub player_id: String,
+    pub player_id: Uuid,
 
     #[serde(rename = "total")]
     pub total: Option<i64>,
 }
 
-#[derive(Clone, PartialEq, Deserialize)]
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+pub struct PlayerData {
+    #[serde(alias = "_id")]
+    pub id: Uuid,
+
+    pub name: String,
+
+    #[serde(rename = "leagueTeamId")]
+    pub team: Option<String>,
+
+    pub deceased: bool,
+
+    #[serde(rename = "permAttr")]
+    pub permanent_attributes: Option<Vec<String>>,
+}
+
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct IdolsClass {
     #[serde(rename = "data")]
     pub data: Data,
 
     #[serde(rename = "idols")]
-    pub idols: Vec<String>,
+    pub idols: Vec<Uuid>,
 }
 
-#[derive(Clone, PartialEq, Deserialize)]
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Data {
     #[serde(rename = "strictlyConfidential")]
@@ -286,8 +401,16 @@ pub enum Idols {
     IdolsClass(IdolsClass),
 }
 
+struct PlayerDisplayable {
+    id: Uuid,
+    name: String,
+    team_name: String,
+    deceased: bool,
+    ego: i8,
+}
+
 #[derive(Template)]
 #[template(path = "home.html")]
 struct HomePage {
-    boards: Vec<(String, IdolsClass)>,
+    boards: Vec<(DateTime<FixedOffset>, Vec<PlayerDisplayable>)>,
 }
