@@ -10,7 +10,12 @@
             {% for player in board %}
             <li>
                 <div class="idolboard__name">{{player.name}}</div>
-                <div class="idolboard__team__icon">TEAM</div>
+                <div
+                    class="idolboard__team__icon"
+                    style="background: {{player.team_colour}}"
+                >
+                    {{player.team_emoji}}
+                </div>
                 <div class="idolboard__team__name">{{player.team_name}}</div>
             </li>
             {% endfor %}

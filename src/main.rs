@@ -30,6 +30,7 @@ const CHRONICLER_BASE: &str = "https://api.sibr.dev/chronicler";
 const DAYS_TREE: &str = "games_v1";
 const PLAYER_TREE: &str = "players_v1";
 const IDOLS_TREE: &str = "idols_v1";
+const TEAM_TREE: &str = "teams_v1";
 
 const ZEROTH_SEASON_WITH_IDOL_BOARD: i16 = 4;
 
@@ -37,27 +38,9 @@ const BEGINNING_OF_TIME: &str = "2020-01-01T00:00:00Z";
 const END_OF_TIME: &str = "2099-01-01T00:00:00Z";
 
 async fn start_task() -> Result<(), anyhow::Error> {
-    let days_tree = DB.open_tree(DAYS_TREE)?;
 
-    // let games: GameData = CLIENT
-    // .get(format!("{}/v1/games", CHRONICLER_BASE))
-    // .send()
-    // .await?
-    // .json()
-    // .await?;
-    let contents = fs::read_to_string("data/games.json").unwrap();
-
-    let games: GameData = serde_json::from_str(&contents).unwrap();
-    for game in games.data.into_iter() {
-        if game.data.sim.is_none() && game.data.season > ZEROTH_SEASON_WITH_IDOL_BOARD {
-            if let Some(start_time) = game.start_time {
-                let data = game.data;
-                let mut key = data.season.to_be_bytes().to_vec();
-                key.extend(data.day.to_be_bytes());
-                days_tree.insert(&key, start_time.to_rfc3339().as_bytes())?;
-            }
-        }
-    }
+    cache_season_days()?;
+    cache_teams()?;
 
     let idols_tree = DB.open_tree(IDOLS_TREE)?;
 
@@ -133,6 +116,37 @@ async fn start_task() -> Result<(), anyhow::Error> {
     Ok(())
 }
 
+fn cache_season_days() -> Result<(), anyhow::Error> {
+    let days_tree = DB.open_tree(DAYS_TREE)?;
+
+    let contents = fs::read_to_string("data/games.json")?;
+    let games: GameData = serde_json::from_str(&contents)?;
+
+    Ok(for game in games.data.into_iter() {
+        if game.data.sim.is_none() && game.data.season > ZEROTH_SEASON_WITH_IDOL_BOARD {
+            if let Some(start_time) = game.start_time {
+                let data = game.data;
+                let mut key = data.season.to_be_bytes().to_vec();
+                key.extend(data.day.to_be_bytes());
+                days_tree.insert(&key, start_time.to_rfc3339().as_bytes())?;
+            }
+        }
+    })
+}
+
+fn cache_teams() -> Result<(), anyhow::Error> {
+    let teams_tree = DB.open_tree(TEAM_TREE)?;
+
+    let contents = fs::read_to_string("data/teams.json")?;
+    let teams: Vec<ChronV2Versions<TeamData>> = serde_json::from_str(&contents)?;
+
+    Ok(for team_data in teams.into_iter() {
+        let team = team_data.data;
+        log::info!("adding data for team {}, {}", team.id, team.full_name);
+        teams_tree.insert(&team.id.as_bytes(), serde_json::to_vec(&team)?)?;
+    })
+}
+
 fn does_any_data_exist_in_tree_for_player(player: &Uuid, tree: &Tree) -> bool {
     let result = tree
         .get_lt(Key::new(*player, DateTime::parse_from_rfc3339(END_OF_TIME).unwrap()).as_bytes())
@@ -186,9 +200,10 @@ fn rocket() -> _ {
 fn index() -> ResponseResult<RawHtml<String>> {
     let idols_tree = DB.open_tree(IDOLS_TREE).map_err(anyhow::Error::from)?;
     let player_tree = DB.open_tree(PLAYER_TREE).map_err(anyhow::Error::from)?;
+    let team_tree = DB.open_tree(TEAM_TREE).map_err(anyhow::Error::from)?;
 
     let html_content = HomePage {
-        boards: convert_db_contents_into_format_for_page(idols_tree.iter(), player_tree),
+        boards: convert_db_contents_into_format_for_page(idols_tree.iter(), player_tree, team_tree),
     }
     .render()
     .map_err(anyhow::Error::from)
@@ -210,7 +225,8 @@ fn load_season(season: i16) -> Result<Option<HomePage>, anyhow::Error> {
     let (timestamp_of_first_day, timestamp_of_last_day) = get_bounds_for_season(season)?;
 
     let idols_tree = DB.open_tree(IDOLS_TREE)?;
-    let player_tree = DB.open_tree(PLAYER_TREE).map_err(anyhow::Error::from)?;
+    let player_tree = DB.open_tree(PLAYER_TREE)?;
+    let team_tree = DB.open_tree(TEAM_TREE)?;
 
     let page_content = HomePage {
         boards: convert_db_contents_into_format_for_page(
@@ -219,6 +235,7 @@ fn load_season(season: i16) -> Result<Option<HomePage>, anyhow::Error> {
                     ..timestamp_of_last_day.to_rfc3339().as_bytes(),
             ),
             player_tree,
+            team_tree,
         ),
     };
     Ok(Some(page_content))
@@ -247,6 +264,7 @@ fn get_bounds_for_season(
 fn convert_db_contents_into_format_for_page(
     database_contents: sled::Iter,
     player_tree: Tree,
+    team_tree: Tree,
 ) -> Vec<(DateTime<FixedOffset>, Vec<PlayerDisplayable>)> {
     database_contents
         .map(|x| {
@@ -264,7 +282,10 @@ fn convert_db_contents_into_format_for_page(
                 Idols::IdolsClass(idols_class) => idols_class.idols,
             })
             .into_iter()
-            .map(|player_id| get_displayable_data_for_player(player_id, timestamp, &player_tree))
+            .map(|player_id| {
+                get_displayable_data_for_player(player_id, timestamp, &player_tree, &team_tree)
+                    .unwrap()
+            })
             .collect();
             (timestamp, idol_data)
         })
@@ -275,24 +296,45 @@ fn get_displayable_data_for_player(
     player_id: Uuid,
     timestamp: DateTime<FixedOffset>,
     player_tree: &Tree,
-) -> PlayerDisplayable {
+    team_tree: &Tree,
+) -> Result<PlayerDisplayable, anyhow::Error> {
     let result = player_tree
-        .get_lt(Key::new(player_id, timestamp).as_bytes())
-        .unwrap()
+        .get_lt(Key::new(player_id, timestamp).as_bytes())?
         .unwrap();
 
-    let result_id = Uuid::from_slice(&Key::read_from(result.0.as_bytes()).unwrap().id).unwrap();
+    let result_id = Uuid::from_slice(&Key::read_from(result.0.as_bytes()).unwrap().id)?;
     assert!(result_id == player_id, "no data existed for player");
 
-    let player_data: PlayerData = serde_json::from_slice(result.1.as_bytes()).unwrap();
+    let player_data: PlayerData = serde_json::from_slice(result.1.as_bytes())?;
 
-    PlayerDisplayable {
+    let team_data = match player_data.team {
+        Some(team_id) => {
+            log::info!("getting data for team {}", team_id);
+            let team_fetch_result = team_tree.get(team_id.as_bytes())?;
+            if team_fetch_result.is_none() {
+                log::info!("uhhh");
+            }
+            let team: TeamData =
+                serde_json::from_slice(&team_fetch_result.unwrap().as_bytes())?;
+            team
+        }
+        None => TeamData {
+            id: Uuid::nil(),
+            colour: "#999999".to_string(),
+            full_name: "nullteam".to_string(),
+            emoji: "❓".to_string(),
+        },
+    };
+
+    Ok(PlayerDisplayable {
         id: player_id,
         name: player_data.name,
-        team_name: "Hellmouth Sunbeams".to_string(),
+        team_name: team_data.full_name,
+        team_colour: team_data.colour,
+        team_emoji: team_data.emoji,
         deceased: player_data.deceased,
         ego: 0,
-    }
+    })
 }
 
 macro_rules! asset {
@@ -368,12 +410,22 @@ pub struct PlayerData {
     pub name: String,
 
     #[serde(rename = "leagueTeamId")]
-    pub team: Option<String>,
+    pub team: Option<Uuid>,
 
     pub deceased: bool,
 
     #[serde(rename = "permAttr")]
     pub permanent_attributes: Option<Vec<String>>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct TeamData {
+    pub id: Uuid,
+    #[serde(rename = "fullName")]
+    pub full_name: String,
+    #[serde(rename = "mainColor")]
+    pub colour: String,
+    pub emoji: String,
 }
 
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
@@ -405,6 +457,8 @@ struct PlayerDisplayable {
     id: Uuid,
     name: String,
     team_name: String,
+    team_colour: String,
+    team_emoji: String,
     deceased: bool,
     ego: i8,
 }
