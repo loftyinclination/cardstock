@@ -38,7 +38,6 @@ const BEGINNING_OF_TIME: &str = "2020-01-01T00:00:00Z";
 const END_OF_TIME: &str = "2099-01-01T00:00:00Z";
 
 async fn start_task() -> Result<(), anyhow::Error> {
-
     cache_season_days()?;
     cache_teams()?;
 
@@ -83,26 +82,7 @@ async fn start_task() -> Result<(), anyhow::Error> {
                 continue;
             }
 
-            let url = format!(
-                "{}/v2/versions?type=Player&id={}",
-                CHRONICLER_BASE,
-                player.to_string()
-            );
-            log::info!("performing request to {}", url);
-
-            let player_versions: Chron2Response<PlayerData> =
-                CLIENT.get(url).send().await?.json().await?;
-
-            log::info!("got data for player {}", player);
-
-            for version in player_versions.items.into_iter() {
-                player_tree
-                    .insert(
-                        Key::new(*player, version.valid_from).as_bytes(),
-                        serde_json::to_vec(&version.data)?,
-                    )
-                    .expect("failed to insert player into db");
-            }
+            cache_player(player, &player_tree).await?;
         }
 
         idols_tree
@@ -145,6 +125,58 @@ fn cache_teams() -> Result<(), anyhow::Error> {
         log::info!("adding data for team {}, {}", team.id, team.full_name);
         teams_tree.insert(&team.id.as_bytes(), serde_json::to_vec(&team)?)?;
     })
+}
+
+async fn cache_player(player: &Uuid, player_tree: &Tree) -> Result<(), anyhow::Error> {
+    let url = format!(
+        "{}/v2/versions?type=Player&id={}",
+        CHRONICLER_BASE,
+        player.to_string()
+    );
+    log::info!("performing request to {}", url);
+
+    let player_versions: Chron2Response<PlayerData> = CLIENT.get(url).send().await?.json().await?;
+
+    log::info!("got data for player {}", player);
+
+    for version in player_versions.items.into_iter() {
+        player_tree
+            .insert(
+                Key::new(*player, version.valid_from).as_bytes(),
+                serde_json::to_vec(&version.data)?,
+            )
+            .expect("failed to insert player into db");
+    }
+
+    let mut next_page = player_versions.next_page;
+
+    while next_page.is_some() {
+        let url = format!(
+            "{}/v2/versions?type=Player&id={}&page={}",
+            CHRONICLER_BASE,
+            player.to_string(),
+            next_page.unwrap()
+        );
+
+        let player_versions: Chron2Response<PlayerData> =
+            CLIENT.get(url).send().await?.json().await?;
+
+        next_page = player_versions.next_page;
+
+        log::info!("got data for player {}", player);
+
+        for version in player_versions.items.into_iter() {
+            log::info!("valid_from {}", version.valid_from);
+            player_tree
+                .insert(
+                    Key::new(*player, version.valid_from).as_bytes(),
+                    serde_json::to_vec(&version.data)?,
+                )
+                .expect("failed to insert player into db");
+        }
+    }
+
+    Ok(())
 }
 
 fn does_any_data_exist_in_tree_for_player(player: &Uuid, tree: &Tree) -> bool {
@@ -314,8 +346,7 @@ fn get_displayable_data_for_player(
             if team_fetch_result.is_none() {
                 log::info!("uhhh");
             }
-            let team: TeamData =
-                serde_json::from_slice(&team_fetch_result.unwrap().as_bytes())?;
+            let team: TeamData = serde_json::from_slice(&team_fetch_result.unwrap().as_bytes())?;
             team
         }
         None => TeamData {
@@ -379,6 +410,8 @@ struct Game {
 
 #[derive(Deserialize)]
 struct Chron2Response<T> {
+    #[serde(rename = "nextPage")]
+    next_page: Option<String>,
     items: Vec<ChronV2Versions<T>>,
 }
 
