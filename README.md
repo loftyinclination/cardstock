@@ -9,8 +9,8 @@ Cardstock uses `git rebase` as a merge strategy -- try and make git commits atom
 ## roadmap
 
 1. version 0.2
-    1. player names - bricks uses sled for this
-        1. teams?
+    1. ~~player names - bricks uses sled for this~~
+        1. ~~teams?~~
         1. ego? season 13 >
     1. better navigation
         1. next/previous season button
@@ -19,7 +19,7 @@ Cardstock uses `git rebase` as a merge strategy -- try and make git commits atom
         1. jump to postseason? election? not sure of nomenclature on this, or on how to do season->time conversion
     1. look and feel
         1. dark mode
-        1. change from using plaintext name/uuid to block, like on site
+        1. ~~change from using plaintext name/uuid to block, like on site~~
     1. manual dedupe of early season data
         1. the endpoint returned number of fans idoling each player, which we're not using, so there are duplicate board entries with the same arrangement of players.
     1. ~~host on cardstock.sibr.dev?~~
