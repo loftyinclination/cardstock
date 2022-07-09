@@ -1362,6 +1362,7 @@ dependencies = [
  "tokio-stream",
  "tokio-util 0.7.3",
  "ubyte",
+ "uuid",
  "version_check",
  "yansi",
 ]
@@ -1407,6 +1408,7 @@ dependencies = [
  "time 0.3.11",
  "tokio",
  "uncased",
+ "uuid",
 ]
 
 [[package]]
