@@ -1,14 +1,20 @@
-{% extends "base.html" %} {% macro twemoji(team) %}
+<!-- prettier-ignore -->
+{% extends "base.html" %}
+<!-- prettier-ignore -->
+{% macro twemoji(team) %}
 <image alt="{{team.emoji}}" />
+<!-- prettier-ignore -->
 {% endmacro %}
 
 <!-- prettier-ignore -->
 {% block content%}
+<!-- prettier-ignore -->
 {% for (timestamp, board) in boards %}
 <section id="{{timestamp}}">
     <div class="idolboard">
         <h2>{{timestamp}}</h2>
         <ol>
+            <!-- prettier-ignore -->
             {% for player in board %}
             <li>
                 <div class="idolboard__name">{{player.name}}</div>
@@ -20,16 +26,24 @@
                 </div>
                 <div class="idolboard__team__name">{{player.team.name}}</div>
             </li>
+            <!-- prettier-ignore -->
             {% endfor %}
         </ol>
         <nav>
+            <!-- prettier-ignore -->
             {% if !loop.first %}
             <a class="nav__back" href="#{{boards[loop.index0 - 1].0}}">&lt;</a>
-            {% endif %} {% if !loop.last %}
+            <!-- prettier-ignore -->
+            {% endif %}
+            <!-- prettier-ignore -->
+            {% if !loop.last %}
             <a class="nav__next" href="#{{boards[loop.index0 + 1].0}}">&gt;</a>
             <!-- prettier-ignore -->
             {% endif %}
         </nav>
     </div>
 </section>
-{% endfor %} {% endblock %}
+<!-- prettier-ignore -->
+{% endfor %}
+<!-- prettier-ignore -->
+{% endblock %}
