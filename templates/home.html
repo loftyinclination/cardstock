@@ -1,4 +1,6 @@
-{% extends "base.html" %}
+{% extends "base.html" %} {% macro twemoji(team) %}
+<image alt="{{team.emoji}}" />
+{% endmacro %}
 
 <!-- prettier-ignore -->
 {% block content%}
@@ -12,11 +14,11 @@
                 <div class="idolboard__name">{{player.name}}</div>
                 <div
                     class="idolboard__team__icon"
-                    style="background: {{player.team_colour}}"
+                    style="background: {{player.team.colour}}"
                 >
-                    {{player.team_emoji}}
+                    {% call twemoji(player.team) %}
                 </div>
-                <div class="idolboard__team__name">{{player.team_name}}</div>
+                <div class="idolboard__team__name">{{player.team.name}}</div>
             </li>
             {% endfor %}
         </ol>

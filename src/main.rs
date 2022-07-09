@@ -1,3 +1,5 @@
+#![feature(iter_intersperse)]
+
 use askama::Template;
 use chrono::{DateTime, FixedOffset, Utc};
 use reqwest::Client;
@@ -325,21 +327,21 @@ fn convert_db_contents_into_format_for_page(
 }
 
 fn get_displayable_data_for_player(
-    player_id: Uuid,
+    id: Uuid,
     timestamp: DateTime<FixedOffset>,
     player_tree: &Tree,
     team_tree: &Tree,
 ) -> Result<PlayerDisplayable, anyhow::Error> {
     let result = player_tree
-        .get_lt(Key::new(player_id, timestamp).as_bytes())?
+        .get_lt(Key::new(id, timestamp).as_bytes())?
         .unwrap();
 
     let result_id = Uuid::from_slice(&Key::read_from(result.0.as_bytes()).unwrap().id)?;
-    assert!(result_id == player_id, "no data existed for player");
+    assert!(result_id == id, "no data existed for player");
 
     let player_data: PlayerData = serde_json::from_slice(result.1.as_bytes())?;
 
-    let team_data = match player_data.team {
+    let team = match player_data.team {
         Some(team_id) => {
             log::info!("getting data for team {}", team_id);
             let team_fetch_result = team_tree.get(team_id.as_bytes())?;
@@ -347,22 +349,23 @@ fn get_displayable_data_for_player(
                 log::info!("uhhh");
             }
             let team: TeamData = serde_json::from_slice(&team_fetch_result.unwrap().as_bytes())?;
-            team
+            TeamDisplayable::new(
+                team.full_name,
+                team.colour,
+                team.emoji
+            )
         }
-        None => TeamData {
-            id: Uuid::nil(),
-            colour: "#999999".to_string(),
-            full_name: "nullteam".to_string(),
-            emoji: "❓".to_string(),
+        None => TeamDisplayable {
+            name: "nullteam".into(),
+            colour: "#999999".into(),
+            emoji: "❓".into(),
         },
     };
 
     Ok(PlayerDisplayable {
-        id: player_id,
+        id,
         name: player_data.name,
-        team_name: team_data.full_name,
-        team_colour: team_data.colour,
-        team_emoji: team_data.emoji,
+        team,
         deceased: player_data.deceased,
         ego: 0,
     })
@@ -486,12 +489,40 @@ pub enum Idols {
     IdolsClass(IdolsClass),
 }
 
+struct TeamDisplayable {
+    name: String,
+    colour: String,
+    emoji: String,
+}
+
+impl TeamDisplayable {
+    fn new(name: String, colour: String, emoji: String) -> TeamDisplayable {
+	let emoji = emoji.strip_prefix("0x")
+            .and_then(|hex| u32::from_str_radix(hex, 16).ok())
+            .and_then(|s| char::try_from(s).ok())
+            .map(|c| c.to_string())
+            .unwrap_or(emoji);
+
+        TeamDisplayable {
+            name,
+            colour,
+            emoji,
+        }
+    }
+
+    fn twemoji(&self) -> String {
+        self.emoji
+            .chars()
+            .map(|c| format!("{:x}", u32::from(c)))
+            .intersperse("-".into())
+            .collect()
+    }
+}
+
 struct PlayerDisplayable {
     id: Uuid,
     name: String,
-    team_name: String,
-    team_colour: String,
-    team_emoji: String,
+    team: TeamDisplayable,
     deceased: bool,
     ego: i8,
 }

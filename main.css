@@ -102,6 +102,8 @@ path {
 }
 
 .idolboard > ol > li {
+    --idolboard-row-height: 30px;
+
     display: grid;
     grid-template-columns: subgrid;
     grid-column-start: 1;
@@ -124,10 +126,15 @@ path {
     padding-inline-start: 0.5em;
 }
 
+.idolboard__name,
+.idolboard__team__name {
+    line-height: var(--idolboard-row-height);
+}
+
 .idolboard__team__icon {
     grid-area: idol-team-icon;
 
-    width: 30px;
+    height: var(--idolboard-row-height);
     aspect-ratio: 1;
     border-radius: 50%;
 
