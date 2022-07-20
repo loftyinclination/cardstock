@@ -95,6 +95,8 @@ async fn start_task() -> Result<(), anyhow::Error> {
             .expect("failed to insert idol into db");
     }
 
+    fix_necromancy(&player_tree)?;
+
     Ok(())
 }
 
@@ -194,6 +196,23 @@ fn does_any_data_exist_in_tree_for_player(player: &Uuid, tree: &Tree) -> bool {
         }
         None => false,
     }
+}
+
+fn fix_necromancy(player_tree: &Tree) -> Result<(), anyhow::Error> {
+    let id = Uuid::parse_str("04e14d7b-5021-4250-a3cd-932ba8e0a889")?;
+
+    let key = Key::new(id, DateTime::parse_from_rfc3339(BEGINNING_OF_TIME)?);
+
+    let value = PlayerData {
+        id,
+        deceased: true,
+        name: "Jaylen Hotdogfingers".into(),
+        permanent_attributes: None,
+        team: Some(Uuid::parse_str("105bc3ff-1320-4e37-8ef0-8d595cb95dd0")?),
+    };
+
+    player_tree.insert(key.as_bytes(), serde_json::to_vec(&value)?)?;
+    Ok(())
 }
 
 #[derive(AsBytes, FromBytes)]
@@ -337,7 +356,7 @@ fn get_displayable_data_for_player(
         .unwrap();
 
     let result_id = Uuid::from_slice(&Key::read_from(result.0.as_bytes()).unwrap().id)?;
-    assert!(result_id == id, "no data existed for player");
+    assert!(result_id == id, "no data existed for player {}", id);
 
     let player_data: PlayerData = serde_json::from_slice(result.1.as_bytes())?;
 
