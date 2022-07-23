@@ -10,9 +10,11 @@
 {% block content%}
 <!-- prettier-ignore -->
 {% for (timestamp, board) in boards %}
-<section id="{{timestamp}}">
+<section id="{{timestamp.timestamp}}">
     <div class="idolboard">
-        <h2>{{timestamp}}</h2>
+        <h2>
+            Day {{timestamp.day}} + {{timestamp.time_since_game_start}} minutes
+        </h2>
         <ol>
             <!-- prettier-ignore -->
             {% for player in board %}
@@ -32,13 +34,27 @@
         <nav>
             <!-- prettier-ignore -->
             {% if !loop.first %}
-            <a class="nav__back" href="#{{boards[loop.index0 - 1].0}}">&lt;</a>
+            <a class="nav__final" href="#{{boards[0].0.timestamp}}"
+                >&vert;&lt; first idol board</a
+            >
+            {% endif %}
             <!-- prettier-ignore -->
+            {% if !loop.first %}
+            <a class="nav__back" href="#{{boards[loop.index0 - 1].0.timestamp}}"
+                >&lt; previous idol board</a
+            >
             {% endif %}
             <!-- prettier-ignore -->
             {% if !loop.last %}
-            <a class="nav__next" href="#{{boards[loop.index0 + 1].0}}">&gt;</a>
+            <a class="nav__next" href="#{{boards[loop.index0 + 1].0.timestamp}}"
+                >&gt; next idol board</a
+            >
+            {% endif %}
             <!-- prettier-ignore -->
+            {% if !loop.last %}
+            <a class="nav__final" href="#{{boards.last().unwrap().0.timestamp}}"
+                >&gt;&vert; final idol board</a
+            >
             {% endif %}
         </nav>
     </div>

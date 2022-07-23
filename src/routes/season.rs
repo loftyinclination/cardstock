@@ -1,9 +1,8 @@
 use crate::entities::player::PlayerDisplayable;
-use crate::routes::ResponseResult;
+use crate::routes::{ResponseResult, Timestamp};
 use crate::{DB, IDOLS_TREE, PLAYER_TREE, TEAM_TREE};
 
 use askama::Template;
-use chrono::{DateTime, FixedOffset};
 use rocket::get;
 use rocket::response::content::RawHtml;
 
@@ -43,5 +42,5 @@ fn load_season(season: i16) -> Result<Option<SeasonPage>, anyhow::Error> {
 #[derive(Template)]
 #[template(path = "season.html")]
 struct SeasonPage {
-    boards: Vec<(DateTime<FixedOffset>, Vec<PlayerDisplayable>)>,
+    boards: Vec<(Timestamp, Vec<PlayerDisplayable>)>,
 }

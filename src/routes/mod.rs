@@ -16,11 +16,17 @@ use zerocopy::{AsBytes, FromBytes};
 
 pub type ResponseResult<T> = std::result::Result<T, Debug<anyhow::Error>>;
 
+pub struct Timestamp {
+    timestamp: DateTime<FixedOffset>,
+    day: u8,
+    time_since_game_start: f32, // not sure about units for this but its blaseball so float is probably correct
+}
+
 pub fn convert_db_contents_into_format_for_page(
     database_contents: sled::Iter,
     player_tree: Tree,
     team_tree: Tree,
-) -> Vec<(DateTime<FixedOffset>, Vec<PlayerDisplayable>)> {
+) -> Vec<(Timestamp, Vec<PlayerDisplayable>)> {
     database_contents
         .map(|x| {
             let result = x.unwrap();
@@ -42,6 +48,12 @@ pub fn convert_db_contents_into_format_for_page(
                     .unwrap()
             })
             .collect();
+
+            let timestamp = Timestamp {
+                timestamp,
+                day: 255,
+                time_since_game_start: 33.0,
+            };
             (timestamp, idol_data)
         })
         .collect()
