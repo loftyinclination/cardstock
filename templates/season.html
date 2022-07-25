@@ -1,9 +1,16 @@
 <!-- prettier-ignore -->
 {% extends "base.html" %}
+
 <!-- prettier-ignore -->
 {% macro twemoji(team) %}
 <image alt="{{team.emoji}}" />
+{% endmacro %}
+
 <!-- prettier-ignore -->
+{% macro board_header(date, time_since_game_start) %}
+<h2>
+    <span class="idolboard__header__day">Day {{timestamp.day}}</span><span class="idolboard__header__offset"> + {{timestamp.time_since_game_start}} minutes</span>
+</h2>
 {% endmacro %}
 
 <!-- prettier-ignore -->
@@ -12,9 +19,7 @@
 {% for (timestamp, board) in boards %}
 <section id="{{timestamp.timestamp}}">
     <div class="idolboard">
-        <h2>
-            Day {{timestamp.day}} + {{timestamp.time_since_game_start}} minutes
-        </h2>
+        {% call board_header(timestamp.day, timestamp.time_since_game_start) %}
         <ol>
             <!-- prettier-ignore -->
             {% for player in board %}
@@ -61,5 +66,4 @@
 </section>
 <!-- prettier-ignore -->
 {% endfor %}
-<!-- prettier-ignore -->
 {% endblock %}
