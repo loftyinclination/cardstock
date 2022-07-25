@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use sled::{Db, Tree};
 use std::fs;
 use uuid::Uuid;
-use zerocopy::{AsBytes, BigEndian, FromBytes, I64};
+use zerocopy::{AsBytes, BigEndian, FromBytes, I16, I64};
 
 lazy_static::lazy_static! {
     static ref DB: Db = sled::Config::default()
@@ -111,12 +111,21 @@ fn cache_season_days() -> Result<(), anyhow::Error> {
         if game.data.sim.is_none() && game.data.season > ZEROTH_SEASON_WITH_IDOL_BOARD {
             if let Some(start_time) = game.start_time {
                 let data = game.data;
-                let mut key = data.season.to_be_bytes().to_vec();
-                key.extend(data.day.to_be_bytes());
-                days_tree.insert(&key, start_time.to_rfc3339().as_bytes())?;
+                let key = SeasonDayKey {
+                    season: data.season.into(),
+                    day: data.day,
+                };
+                days_tree.insert(key.as_bytes(), start_time.to_rfc3339().as_bytes())?;
             }
         }
     })
+}
+
+#[derive(AsBytes, FromBytes)]
+#[repr(C)]
+pub struct SeasonDayKey {
+    season: I16<BigEndian>,
+    day: u8,
 }
 
 fn cache_teams() -> Result<(), anyhow::Error> {

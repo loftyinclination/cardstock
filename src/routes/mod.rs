@@ -6,7 +6,7 @@ use crate::entities::player::{PlayerData, PlayerDisplayable};
 use crate::entities::team::TeamDisplayable;
 use crate::idol::Idols;
 use crate::TeamData;
-use crate::{Key, BEGINNING_OF_TIME, DAYS_TREE, DB, END_OF_TIME};
+use crate::{Key, SeasonDayKey, BEGINNING_OF_TIME, DAYS_TREE, DB, END_OF_TIME};
 use chrono::{DateTime, FixedOffset};
 use rocket::response::Debug;
 use rocket::{get, http::ContentType};
@@ -105,16 +105,21 @@ fn get_bounds_for_season(
 ) -> Result<(DateTime<FixedOffset>, DateTime<FixedOffset>), anyhow::Error> {
     let days_tree = DB.open_tree(DAYS_TREE)?;
 
-    let mut key = season.to_be_bytes().to_vec();
-    key.push(0);
+    let key = SeasonDayKey {
+        season: season.into(),
+        day: 0,
+    };
     let timestamp_of_first_day = days_tree
-        .get(&*key)?
+        .get(key.as_bytes())?
         .map(|v| DateTime::parse_from_rfc3339(std::str::from_utf8(&v).unwrap()).unwrap())
         .unwrap_or(DateTime::parse_from_rfc3339(BEGINNING_OF_TIME).unwrap());
-    key[2] = 0xFF;
+    let key = SeasonDayKey {
+        season: season.into(),
+        day: 255,
+    };
     let timestamp_of_last_day = days_tree
-        .get_lt(&*key)?
-        .map(|(_, v)| DateTime::parse_from_rfc3339(std::str::from_utf8(&v).unwrap()).unwrap())
+        .get(key.as_bytes())?
+        .map(|v| DateTime::parse_from_rfc3339(std::str::from_utf8(&v).unwrap()).unwrap())
         .unwrap_or(DateTime::parse_from_rfc3339(END_OF_TIME).unwrap());
 
     Ok((timestamp_of_first_day, timestamp_of_last_day))
