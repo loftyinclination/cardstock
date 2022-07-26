@@ -3,8 +3,15 @@
 
 <!-- prettier-ignore -->
 {% block content %}
-    <!-- prettier-ignore -->
-    {% for season in seasons %}
+<!-- prettier-ignore -->
+{% for era in eras %}
+<h2>{{era.name}}</h2>
+<ol>
+    {% for season in era.seasons %}
+    <li>
         <a href="/season/{{season}}">Season {{season}}</a>
+    </li>
     {% endfor %}
+</ol>
+{% endfor %}
 {% endblock %}
