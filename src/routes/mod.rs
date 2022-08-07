@@ -125,23 +125,26 @@ fn get_bounds_for_season(
     Ok((timestamp_of_first_day, timestamp_of_last_day))
 }
 
-macro_rules! asset {
-    ($path:expr) => {
-        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/", $path))
-    };
+mod routes {
+    macro_rules! asset {
+        ($path:expr) => {
+            include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/", $path))
+        };
+    }
+    pub(crate) use asset;
 }
 
 #[get("/styles.css")]
 pub fn css() -> (ContentType, &'static str) {
-    (ContentType::CSS, asset!("/main.css"))
+    (ContentType::CSS, routes::asset!("/main.css"))
 }
 
 #[get("/cardstock.svg")]
 pub fn cardstock() -> (ContentType, &'static str) {
-    (ContentType::SVG, asset!("cardstock.svg"))
+    (ContentType::SVG, routes::asset!("cardstock.svg"))
 }
 
 #[get("/manifest.webmanifest")]
 pub fn manifest() -> (ContentType, &'static str) {
-    (ContentType::JSON, asset!("manifest.webmanifest"))
+    (ContentType::JSON, routes::asset!("manifest.webmanifest"))
 }

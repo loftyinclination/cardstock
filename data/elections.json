@@ -1,74 +1,125 @@
 [
   {
-    "season": 6,
-    "time": "2020-09-13T19:30:00Z"
+    "name": "Discipline Era",
+    "seasons": [
+      {
+        "index": 6,
+        "start_date": "Sep 7, 2020",
+        "end_date": "Sep 13, 2020",
+        "election_offset": "2020-09-13T19:30:00Z"
+      },
+      {
+        "index": 7,
+        "start_date": "Sep 14, 2020",
+        "end_date": "Sep 20, 2020",
+        "election_offset": "2020-09-20T19:30:00Z"
+      },
+      {
+        "index": 8,
+        "start_date": "Sep 21, 2020",
+        "end_date": "Sep 27, 2020",
+        "election_offset": "2020-09-27T19:00:00Z"
+      },
+      {
+        "index": 9,
+        "start_date": "Oct 5, 2020",
+        "end_date": "Oct 11, 2020",
+        "election_offset": "2020-10-11T19:15:00Z"
+      },
+      {
+        "index": 10,
+        "start_date": "Oct 12, 2020",
+        "end_date": "Oct 18, 2020",
+        "election_offset": "2020-10-18T19:30:00Z"
+      },
+      {
+        "index": 11,
+        "start_date": "Oct 19, 2020",
+        "end_date": "Oct 25, 2020",
+        "election_offset": "2020-10-25T19:15:00Z"
+      }
+    ]
   },
   {
-    "season": 7,
-    "time": "2020-09-20T19:30:00Z"
-  },
-  {
-    "season": 8,
-    "time": "2020-09-27T19:00:00Z"
-  },
-  {
-    "season": 9,
-    "time": "2020-10-11T19:15:00Z"
-  },
-  {
-    "season": 10,
-    "time": "2020-10-18T19:30:00Z"
-  },
-  {
-    "season": 11,
-    "time": "2020-10-25T19:15:00Z"
-  },
-  {
-    "season": 12,
-    "time": "2021-03-07T19:00:00Z"
-  },
-  {
-    "season": 13,
-    "time": "2021-03-14T19:15:00Z"
-  },
-  {
-    "season": 14,
-    "time": "2021-03-21T18:15:00Z"
-  },
-  {
-    "season": 15,
-    "time": "2021-04-11T18:18:00Z"
-  },
-  {
-    "season": 16,
-    "time": "2021-04-18T18:03:00Z"
-  },
-  {
-    "season": 17,
-    "time": "2021-04-25T18:15:00Z"
-  },
-  {
-    "season": 18,
-    "time": "2021-05-16T18:03:00Z"
-  },
-  {
-    "season": 19,
-    "time": "2021-05-23T18:15:00Z"
-  },
-  {
-    "season": 20,
-    "time": "2021-06-20T18:15:00Z"
-  },
-  {
-    "season": 21,
-    "time": "2021-06-27T18:15:00Z"
-  },
-  {
-    "season": 22,
-    "time": "2021-07-04T18:20:00Z"
-  },
-  {
-    "season": 23,
-    "time": "2021-07-25T18:15:00Z"
+    "name": "Expansion Era",
+    "seasons": [
+      {
+        "index": 12,
+        "start_date": "Mar 1, 2021",
+        "end_date": "Mar 7, 2021",
+        "election_offset": "2021-03-07T19:00:00Z"
+      },
+      {
+        "index": 13,
+        "start_date": "Mar 8, 2021",
+        "end_date": "Mar 14, 2021",
+        "election_offset": "2021-03-14T19:15:00Z"
+      },
+      {
+        "index": 14,
+        "start_date": "Mar 15, 2021",
+        "end_date": "Mar 21, 2021",
+        "election_offset": "2021-03-21T18:15:00Z"
+      },
+      {
+        "index": 15,
+        "start_date": "Apr 5, 2021",
+        "end_date": "Apr 11, 2021",
+        "election_offset": "2021-04-11T18:18:00Z"
+      },
+      {
+        "index": 16,
+        "start_date": "Apr 12, 2021",
+        "end_date": "Apr 18, 2021",
+        "election_offset": "2021-04-18T18:03:00Z"
+      },
+      {
+        "index": 17,
+        "start_date": "Apr 19, 2021",
+        "end_date": "Apr 25, 2021",
+        "election_offset": "2021-04-25T18:15:00Z"
+      },
+      {
+        "index": 18,
+        "start_date": "May 10, 2021",
+        "end_date": "May 16, 2021",
+        "election_offset": "2021-05-16T18:03:00Z"
+      },
+      {
+        "index": 19,
+        "start_date": "May 17, 2021",
+        "end_date": "May 23, 2021",
+        "election_offset": "2021-05-23T18:15:00Z"
+      },
+      {
+        "index": 20,
+        "start_date": "Jun 14, 2021",
+        "end_date": "Jun 20, 2021",
+        "election_offset": "2021-06-20T18:15:00Z"
+      },
+      {
+        "index": 21,
+        "start_date": "Jun 21, 2021",
+        "end_date": "Jun 27, 2021",
+        "election_offset": "2021-06-27T18:15:00Z"
+      },
+      {
+        "index": 22,
+        "start_date": "Jun 28, 2021",
+        "end_date": "Jul 4, 2021",
+        "election_offset": "2021-06-27T18:15:00Z"
+      },
+      {
+        "index": 23,
+        "start_date": "Jul 19, 2021",
+        "end_date": "Jul 25, 2021",
+        "election_offset": "2021-07-04T18:20:00Z"
+      },
+      {
+        "index": 24,
+        "start_date": "Jul 26, 2021",
+        "end_date": "Aug 1, 2021"
+      }
+    ]
   }
 ]

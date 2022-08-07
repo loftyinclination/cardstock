@@ -17,12 +17,18 @@
                 >
                 <span class="index-season-view">View Idols</span>
             </a>
+            <!-- prettier-ignore -->
+            {% match season.election_offset %}
+            {% when Some with (election_offset) %}
             <span>|</span>
             <a
-                href="/season/{{season.index}}#{{season.election_offset}}"
+                href="/season/{{season.index}}#{{election_offset}}"
                 class="index-season-election"
                 >View Election</a
             >
+            <!-- prettier-ignore -->
+            {% when None %}
+            {% endmatch %}
         </li>
         {% endfor %}
     </ol>
