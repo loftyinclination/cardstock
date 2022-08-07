@@ -9,61 +9,75 @@
 <!-- prettier-ignore -->
 {% macro board_header(date, time_since_game_start) %}
 <h2>
-    <span class="idolboard__header__day">Day {{timestamp.day}}</span><span class="idolboard__header__offset"> + {{timestamp.time_since_game_start}} minutes</span>
+    <span class="idolboard__header__day">Day {{timestamp.day}}</span
+    ><span class="idolboard__header__offset">
+        + {{timestamp.time_since_game_start}} minutes</span
+    >
 </h2>
 {% endmacro %}
 
 <!-- prettier-ignore -->
 {% block content%}
-<!-- prettier-ignore -->
-{% for (timestamp, board) in boards %}
-<section id="{{timestamp.timestamp}}">
-    <div class="idolboard">
-        {% call board_header(timestamp.day, timestamp.time_since_game_start) %}
-        <ol>
-            <!-- prettier-ignore -->
-            {% for player in board %}
-            <li>
-                <div class="idolboard__name">{{player.name}}</div>
-                <div
-                    class="idolboard__team__icon"
-                    style="background: {{player.team.colour}}"
+<main class="centered-section board-container">
+    <!-- prettier-ignore -->
+    {% for (timestamp, board) in boards %}
+    <section id="{{timestamp.timestamp}}">
+        <div class="idolboard">
+            {% call board_header(timestamp.day, timestamp.time_since_game_start)
+            %}
+            <ol>
+                <!-- prettier-ignore -->
+                {% for player in board %}
+                <li>
+                    <div class="idolboard__name">{{player.name}}</div>
+                    <div
+                        class="idolboard__team__icon"
+                        style="background: {{player.team.colour}}"
+                    >
+                        {% call twemoji(player.team) %}
+                    </div>
+                    <div class="idolboard__team__name">
+                        {{player.team.name}}
+                    </div>
+                </li>
+                <!-- prettier-ignore -->
+                {% endfor %}
+            </ol>
+            <nav>
+                <!-- prettier-ignore -->
+                {% if !loop.first %}
+                <a class="nav__final" href="#{{boards[0].0.timestamp}}"
+                    >&vert;&lt; first idol board</a
                 >
-                    {% call twemoji(player.team) %}
-                </div>
-                <div class="idolboard__team__name">{{player.team.name}}</div>
-            </li>
-            <!-- prettier-ignore -->
-            {% endfor %}
-        </ol>
-        <nav>
-            <!-- prettier-ignore -->
-            {% if !loop.first %}
-            <a class="nav__final" href="#{{boards[0].0.timestamp}}"
-                >&vert;&lt; first idol board</a
-            >
-            {% endif %}
-            <!-- prettier-ignore -->
-            {% if !loop.first %}
-            <a class="nav__back" href="#{{boards[loop.index0 - 1].0.timestamp}}"
-                >&lt; previous idol board</a
-            >
-            {% endif %}
-            <!-- prettier-ignore -->
-            {% if !loop.last %}
-            <a class="nav__next" href="#{{boards[loop.index0 + 1].0.timestamp}}"
-                >&gt; next idol board</a
-            >
-            {% endif %}
-            <!-- prettier-ignore -->
-            {% if !loop.last %}
-            <a class="nav__final" href="#{{boards.last().unwrap().0.timestamp}}"
-                >&gt;&vert; final idol board</a
-            >
-            {% endif %}
-        </nav>
-    </div>
-</section>
-<!-- prettier-ignore -->
-{% endfor %}
+                {% endif %}
+                <!-- prettier-ignore -->
+                {% if !loop.first %}
+                <a
+                    class="nav__back"
+                    href="#{{boards[loop.index0 - 1].0.timestamp}}"
+                    >&lt; previous idol board</a
+                >
+                {% endif %}
+                <!-- prettier-ignore -->
+                {% if !loop.last %}
+                <a
+                    class="nav__next"
+                    href="#{{boards[loop.index0 + 1].0.timestamp}}"
+                    >&gt; next idol board</a
+                >
+                {% endif %}
+                <!-- prettier-ignore -->
+                {% if !loop.last %}
+                <a
+                    class="nav__final"
+                    href="#{{boards.last().unwrap().0.timestamp}}"
+                    >&gt;&vert; final idol board</a
+                >
+                {% endif %}
+            </nav>
+        </div>
+    </section>
+    <!-- prettier-ignore -->
+    {% endfor %}
+</main>
 {% endblock %}

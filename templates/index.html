@@ -3,15 +3,29 @@
 
 <!-- prettier-ignore -->
 {% block content %}
-<!-- prettier-ignore -->
-{% for era in eras %}
-<h2>{{era.name}}</h2>
-<ol>
-    {% for season in era.seasons %}
-    <li>
-        <a href="/season/{{season}}">Season {{season}}</a>
-    </li>
+<main class="centered-section index-list">
+    <!-- prettier-ignore -->
+    {% for era in eras %}
+    <h2 class="index-era">{{era.name}}</h2>
+    <ol>
+        {% for season in era.seasons %}
+        <li class="index-choice">
+            <a href="/season/{{season.index}}" class="index-season-identifer">
+                <h3 class="index-season-header">Season {{season.index}}</h3>
+                <span class="index-season-dates"
+                    >{{season.start_date}} - {{season.end_date}}</span
+                >
+                <span class="index-season-view">View Idols</span>
+            </a>
+            <span>|</span>
+            <a
+                href="/season/{{season.index}}#{{season.election_offset}}"
+                class="index-season-election"
+                >View Election</a
+            >
+        </li>
+        {% endfor %}
+    </ol>
     {% endfor %}
-</ol>
-{% endfor %}
+</main>
 {% endblock %}

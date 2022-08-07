@@ -57,14 +57,82 @@ h1 {
     line-height: 1.75rem;
 }
 
-main {
+.board-container,
+.index-list {
     width: var(--section-width);
 
+    box-sizing: border-box;
+}
+
+.board-container {
     display: flex;
     flex-direction: row;
     overflow-x: hidden;
+}
 
-    box-sizing: border-box;
+.index-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.index-era {
+    margin-block-end: 1.25rem;
+}
+
+.index-choice {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.25rem;
+
+    padding-inline: 1rem;
+    padding-block: 0.5rem;
+
+    border-color: var(--clr-neutral-800);
+    border-bottom-style: solid;
+    border-bottom-width: 1px;
+    border-radius: 0.25rem;
+
+    text-decoration: none;
+}
+
+.index-choice:hover {
+    background-color: var(--clr-accent-400);
+    text-decoration: underline;
+}
+
+.index-choice > *,
+.index-season-offset > * {
+    display: inline-block;
+    color: inherit;
+    text-decoration: inherit;
+}
+
+.index-season-identifer {
+    flex-grow: 1;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem;
+}
+
+.index-season-header {
+    display: inline;
+    margin-block: 0;
+
+    line-height: 1.75rem;
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.index-season-dates {
+    color: var(--clr-neutral-300);
+}
+
+.index-season-view {
+    flex-grow: 1;
+    text-align: right;
 }
 
 section {
@@ -124,6 +192,7 @@ path {
     grid-column-end: 5;
     border-radius: 0.5em;
     padding-block: 0.5em;
+    padding-inline-start: 2.25em;
 }
 
 .idolboard > ol > li:hover {
@@ -138,6 +207,7 @@ path {
 .idolboard__name {
     grid-area: idol-name;
     padding-inline-start: 0.5em;
+    display: list-item;
 }
 
 .idolboard__name,
