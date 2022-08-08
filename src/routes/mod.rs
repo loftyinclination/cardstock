@@ -27,13 +27,15 @@ pub fn convert_db_contents_into_format_for_page(
     player_tree: Tree,
     team_tree: Tree,
     limit: Option<u16>,
-) -> Vec<(Timestamp, Vec<PlayerDisplayable>)> {
-    let result = database_contents
+) -> Result<Vec<(Timestamp, Vec<PlayerDisplayable>)>, anyhow::Error> {
+    let idol_boards = database_contents
         .map(|x| {
             let result = x.unwrap();
             let timestamp =
                 DateTime::parse_from_rfc3339(std::str::from_utf8(result.0.as_bytes()).unwrap())
                     .unwrap();
+
+            let (day, time_since_game_start) = get_day_and_time_since_game_start(timestamp)?;
 
             let idols: Idols = serde_json::from_slice(result.1.as_bytes()).unwrap();
             let idol_data = (match idols {
@@ -54,15 +56,15 @@ pub fn convert_db_contents_into_format_for_page(
 
             let timestamp = Timestamp {
                 timestamp,
-                day: 255,
-                time_since_game_start: 33.0,
+                day,
+                time_since_game_start,
             };
-            (timestamp, idol_data)
+            Ok((timestamp, idol_data))
         });
 
     match limit {
-        Some(number_to_limit_to) => result.take(number_to_limit_to.into()).collect(),
-        None => result.collect(),
+        Some(number_to_limit_to) => idol_boards.take(number_to_limit_to.into()).collect::<Result<Vec<_>, anyhow::Error>>(),
+        None => idol_boards.collect::<Result<Vec<_>, anyhow::Error>>(),
     }
 }
 
@@ -130,6 +132,10 @@ fn get_bounds_for_season(
         .unwrap_or(DateTime::parse_from_rfc3339(END_OF_TIME).unwrap());
 
     Ok((timestamp_of_first_day, timestamp_of_last_day))
+}
+
+fn get_day_and_time_since_game_start(timestamp: DateTime<FixedOffset>) -> Result<(u8, f32), anyhow::Error> {
+    Ok((255, 33.3))
 }
 
 mod routes {

@@ -35,7 +35,7 @@ fn load_season(season: i16, limit: Option<u16>) -> Result<Option<SeasonPage>, an
             player_tree,
             team_tree,
             limit,
-        ),
+        )?,
     };
     Ok(Some(page_content))
 }
