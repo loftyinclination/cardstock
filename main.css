@@ -128,6 +128,21 @@ h1 {
     grid-template-columns: auto auto 1fr;
 }
 
+@media (max-width: 650px) {
+    .index-season-header {
+        color: blue;
+    }
+}
+
+@media (max-width: 650px) {
+    .index-season-identifier {
+        grid-template-areas:
+            "header idol"
+            "date idol";
+        grid-template-columns: "auto 1fr";
+    }
+}
+
 .index-season-header {
     grid-area: header;
 
