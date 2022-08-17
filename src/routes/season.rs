@@ -9,17 +9,17 @@ use rocket::response::content::RawHtml;
 use super::convert_db_contents_into_format_for_page;
 use super::get_bounds_for_season;
 
-#[get("/season/<season>")]
-pub fn season(season: i16) -> ResponseResult<Option<RawHtml<String>>> {
+#[get("/season/<season>?<limit>")]
+pub fn season(season: i16, limit: Option<u16>) -> ResponseResult<Option<RawHtml<String>>> {
     Ok(
-        match load_season(season - 1).map_err(anyhow::Error::from)? {
+        match load_season(season - 1, limit).map_err(anyhow::Error::from)? {
             Some(idol_boards) => Some(RawHtml(idol_boards.render().map_err(anyhow::Error::from)?)),
             None => None,
         },
     )
 }
 
-fn load_season(season: i16) -> Result<Option<SeasonPage>, anyhow::Error> {
+fn load_season(season: i16, limit: Option<u16>) -> Result<Option<SeasonPage>, anyhow::Error> {
     let (timestamp_of_first_day, timestamp_of_last_day) = get_bounds_for_season(season)?;
 
     let idols_tree = DB.open_tree(IDOLS_TREE)?;
@@ -34,6 +34,7 @@ fn load_season(season: i16) -> Result<Option<SeasonPage>, anyhow::Error> {
             ),
             player_tree,
             team_tree,
+            limit,
         ),
     };
     Ok(Some(page_content))

@@ -26,8 +26,9 @@ pub fn convert_db_contents_into_format_for_page(
     database_contents: sled::Iter,
     player_tree: Tree,
     team_tree: Tree,
+    limit: Option<u16>,
 ) -> Vec<(Timestamp, Vec<PlayerDisplayable>)> {
-    database_contents
+    let result = database_contents
         .map(|x| {
             let result = x.unwrap();
             let timestamp =
@@ -49,14 +50,20 @@ pub fn convert_db_contents_into_format_for_page(
             })
             .collect();
 
+            log::info!("timestamp {}", timestamp);
+
             let timestamp = Timestamp {
                 timestamp,
                 day: 255,
                 time_since_game_start: 33.0,
             };
             (timestamp, idol_data)
-        })
-        .collect()
+        });
+
+    match limit {
+        Some(number_to_limit_to) => result.take(number_to_limit_to.into()).collect(),
+        None => result.collect(),
+    }
 }
 
 fn get_displayable_data_for_player(
@@ -76,7 +83,7 @@ fn get_displayable_data_for_player(
 
     let team = match player_data.team {
         Some(team_id) => {
-            log::info!("getting data for team {}", team_id);
+            //log::info!("getting data for team {}", team_id);
             let team_fetch_result = team_tree.get(team_id.as_bytes())?;
             if team_fetch_result.is_none() {
                 log::info!("uhhh");
