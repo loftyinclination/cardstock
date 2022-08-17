@@ -43,36 +43,38 @@
                 <!-- prettier-ignore -->
                 {% endfor %}
             </ol>
-            <nav>
+            <nav class="board__nav">
                 <!-- prettier-ignore -->
                 {% if !loop.first %}
-                <a class="nav__final" href="#{{boards[0].0.timestamp}}"
-                    >&vert;&lt; first idol board</a
-                >
+                <a
+                    class="board__nav__first"
+                    href="#{{boards[0].0.timestamp}}"
+                    title="Back to first Idol Board for Season"
+                ></a>
                 {% endif %}
                 <!-- prettier-ignore -->
                 {% if !loop.first %}
                 <a
-                    class="nav__back"
+                    class="board__nav__back"
                     href="#{{boards[loop.index0 - 1].0.timestamp}}"
-                    >&lt; previous idol board</a
-                >
+                    title="Previous Idol Board"
+                ></a>
                 {% endif %}
                 <!-- prettier-ignore -->
                 {% if !loop.last %}
                 <a
-                    class="nav__next"
+                    class="board__nav__next"
                     href="#{{boards[loop.index0 + 1].0.timestamp}}"
-                    >&gt; next idol board</a
-                >
+                    title="Next Idol Board"
+                ></a>
                 {% endif %}
                 <!-- prettier-ignore -->
                 {% if !loop.last %}
                 <a
-                    class="nav__final"
+                    class="board__nav__last"
                     href="#{{boards.last().unwrap().0.timestamp}}"
-                    >&gt;&vert; final idol board</a
-                >
+                    title="Final Idol Board for Season"
+                ></a>
                 {% endif %}
             </nav>
         </div>

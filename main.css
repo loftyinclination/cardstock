@@ -47,7 +47,7 @@ header > button {
     font-size: 100%;
 }
 
-.sr-only {
+.visually-hidden {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -126,8 +126,6 @@ h1 {
     gap: 1.25rem;
     grid-template-areas: "header date idol";
     grid-template-columns: auto auto 1fr;
-}
-
 }
 
 .index-season-header {
@@ -261,15 +259,43 @@ path {
 .idolboard > nav {
     grid-area: nav;
     display: grid;
-    grid-template-columns: [nav-left] 1fr [nav-right] 1fr;
+    grid-template-areas: "first back next last";
+    grid-template-columns: repeat(4, 1fr);
+
+    justify-items: center;
+    padding-block-end: 1rem;
+    width: 50%;
+    margin-inline: auto;
 }
 
-.nav__back {
-    grid-area: nav-left;
+.board__nav__first,
+.board__nav__back,
+.board__nav__next,
+.board__nav__last {
+    background-repeat: no-repeat;
+    background-size: cover;
+    height: 32px;
+    aspect-ratio: 1;
 }
 
-.nav__next {
-    grid-area: nav-right;
+.board__nav__first {
+    grid-area: first;
+    background-image: url("images/nav-first.svg");
+}
+
+.board__nav__back {
+    grid-area: back;
+    background-image: url("images/nav-back.svg");
+}
+
+.board__nav__next {
+    grid-area: next;
+    background-image: url("images/nav-next.svg");
+}
+
+.board__nav__last {
+    grid-area: last;
+    background-image: url("images/nav-last.svg");
 }
 
 footer {

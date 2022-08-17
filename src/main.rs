@@ -251,6 +251,10 @@ fn rocket() -> _ {
                 routes::season::season,
                 routes::css,
                 routes::cardstock,
+                routes::nav_first_image,
+                routes::nav_back_image,
+                routes::nav_next_image,
+                routes::nav_last_image,
                 routes::manifest,
             ],
         )
