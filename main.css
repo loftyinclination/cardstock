@@ -288,9 +288,28 @@ path {
 .board__nav__next,
 .board__nav__last {
     background-repeat: no-repeat;
+    background-color: var(--clr-neutral-800);
     background-size: cover;
+
     height: 32px;
     aspect-ratio: 1;
+
+    border-radius: 0.25rem;
+}
+
+.board__nav__first:hover,
+.board__nav__back:hover,
+.board__nav__next:hover,
+.board__nav__last:hover {
+    background-color: var(--clr-neutral-600);
+}
+
+.board__nav__first:focus-visible,
+.board__nav__back:focus-visible,
+.board__nav__next:focus-visible,
+.board__nav__last:focus-visible {
+    outline-width: 0.5rem;
+    outline-offset: 0.25rem;
 }
 
 .board__nav__first {

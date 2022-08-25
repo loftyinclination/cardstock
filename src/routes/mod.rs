@@ -159,22 +159,22 @@ pub fn cardstock() -> (ContentType, &'static str) {
 
 #[get("/images/nav-first.svg")]
 pub fn nav_first_image() -> (ContentType, &'static str) {
-    (ContentType::SVG, routes::asset!("cardstock.svg"))
+    (ContentType::SVG, routes::asset!("images/nav-first.svg"))
 }
 
 #[get("/images/nav-back.svg")]
 pub fn nav_back_image() -> (ContentType, &'static str) {
-    (ContentType::SVG, routes::asset!("cardstock.svg"))
+    (ContentType::SVG, routes::asset!("images/nav-back.svg"))
 }
 
 #[get("/images/nav-next.svg")]
 pub fn nav_next_image() -> (ContentType, &'static str) {
-    (ContentType::SVG, routes::asset!("cardstock.svg"))
+    (ContentType::SVG, routes::asset!("images/nav-next.svg"))
 }
 
 #[get("/images/nav-last.svg")]
 pub fn nav_last_image() -> (ContentType, &'static str) {
-    (ContentType::SVG, routes::asset!("cardstock.svg"))
+    (ContentType::SVG, routes::asset!("images/nav-last.svg"))
 }
 
 #[get("/manifest.webmanifest")]
