@@ -102,7 +102,6 @@ h1 {
     border-color: var(--clr-neutral-800);
     border-bottom-style: solid;
     border-bottom-width: 1px;
-    border-radius: 0.25rem;
 
     text-decoration: none;
 }
@@ -110,6 +109,9 @@ h1 {
 .index-choice:hover {
     background-color: var(--clr-accent-400);
     text-decoration: underline;
+
+    border-bottom-left-radius: 0.25rem;
+    border-bottom-right-radius: 0.25rem;
 }
 
 .index-choice > *,
