@@ -9,18 +9,21 @@
     <h2 class="index-era">{{era.name}}</h2>
     <ol>
         {% for season in era.seasons %}
-        <li class="index-choice">
-            <a href="/season/{{season.index}}" class="index-season-identifer">
+        <li class="index-choice
+            {% match season.election_offset %}
+            {% when Some with (election_offset) %}
+            {% when None %}
+            no-election
+            {% endmatch %}">
+            <a href="/season/{{season.index}}" class="index-season-identifier">
                 <h3 class="index-season-header">Season {{season.index}}</h3>
-                <span class="index-season-dates"
-                    >{{season.start_date}} - {{season.end_date}}</span
-                >
+                <span class="index-season-dates">{{season.start_date}} - {{season.end_date}}</span>
                 <span class="index-season-view">View Idols</span>
             </a>
             <!-- prettier-ignore -->
             {% match season.election_offset %}
             {% when Some with (election_offset) %}
-            <span>|</span>
+            <span class="index-season-separator">|</span>
             <a
                 href="/season/{{season.index}}#{{election_offset}}"
                 class="index-season-election"
