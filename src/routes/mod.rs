@@ -26,6 +26,7 @@ pub fn convert_db_contents_into_format_for_page(
     database_contents: sled::Iter,
     player_tree: Tree,
     team_tree: Tree,
+    inverse_days_tree: &Tree,
     limit: Option<u16>,
 ) -> Result<Vec<(Timestamp, Vec<PlayerDisplayable>)>, anyhow::Error> {
     let idol_boards = database_contents
@@ -35,7 +36,7 @@ pub fn convert_db_contents_into_format_for_page(
                 DateTime::parse_from_rfc3339(std::str::from_utf8(result.0.as_bytes()).unwrap())
                     .unwrap();
 
-            let (day, time_since_game_start) = get_day_and_time_since_game_start(timestamp)?;
+            let (day, time_since_game_start) = get_day_and_time_since_game_start(timestamp, inverse_days_tree)?;
 
             let idols: Idols = serde_json::from_slice(result.1.as_bytes()).unwrap();
             let idol_data = (match idols {
@@ -134,8 +135,18 @@ fn get_bounds_for_season(
     Ok((timestamp_of_first_day, timestamp_of_last_day))
 }
 
-fn get_day_and_time_since_game_start(timestamp: DateTime<FixedOffset>) -> Result<(u8, f32), anyhow::Error> {
-    Ok((255, 33.3))
+fn get_day_and_time_since_game_start(
+    timestamp: DateTime<FixedOffset>,
+    inverse_days_tree: &Tree
+) -> Result<(u8, f32), anyhow::Error> {
+    let (start_time_bytes, season_day_bytes) = (*inverse_days_tree).get_lt(timestamp.to_rfc3339().as_bytes())?.unwrap();
+
+    let start_time = DateTime::parse_from_rfc3339(std::str::from_utf8(&start_time_bytes).unwrap()).unwrap();
+    let time_since_start_of_game = timestamp - start_time;
+    let fractional_minutes_since_start_of_game = time_since_start_of_game.num_minutes() as f32 + (time_since_start_of_game.num_seconds() as f32 / 60_f32);
+
+    let season_day = SeasonDayKey::read_from(season_day_bytes.as_bytes()).unwrap();
+    Ok((season_day.day, fractional_minutes_since_start_of_game))
 }
 
 mod routes {

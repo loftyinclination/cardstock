@@ -1,6 +1,6 @@
 use crate::entities::player::PlayerDisplayable;
 use crate::routes::{ResponseResult, Timestamp};
-use crate::{DB, IDOLS_TREE, PLAYER_TREE, TEAM_TREE};
+use crate::{DB, IDOLS_TREE, PLAYER_TREE, TEAM_TREE, INVERSE_DAYS_TREE};
 
 use askama::Template;
 use rocket::get;
@@ -25,6 +25,7 @@ fn load_season(season: i16, limit: Option<u16>) -> Result<Option<SeasonPage>, an
     let idols_tree = DB.open_tree(IDOLS_TREE)?;
     let player_tree = DB.open_tree(PLAYER_TREE)?;
     let team_tree = DB.open_tree(TEAM_TREE)?;
+    let inverse_days_tree = DB.open_tree(INVERSE_DAYS_TREE)?;
 
     let page_content = SeasonPage {
         boards: convert_db_contents_into_format_for_page(
@@ -34,6 +35,7 @@ fn load_season(season: i16, limit: Option<u16>) -> Result<Option<SeasonPage>, an
             ),
             player_tree,
             team_tree,
+            &inverse_days_tree,
             limit,
         )?,
     };
