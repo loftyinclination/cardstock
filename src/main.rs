@@ -31,6 +31,7 @@ lazy_static::lazy_static! {
 const CHRONICLER_BASE: &str = "https://api.sibr.dev/chronicler";
 
 const DAYS_TREE: &str = "games_v1";
+const INVERSE_DAYS_TREE: &str = "inverse_games_v1";
 const PLAYER_TREE: &str = "players_v1";
 const IDOLS_TREE: &str = "idols_v1";
 const TEAM_TREE: &str = "teams_v1";
@@ -103,6 +104,7 @@ async fn start_task() -> Result<(), anyhow::Error> {
 
 fn cache_season_days() -> Result<(), anyhow::Error> {
     let days_tree = DB.open_tree(DAYS_TREE)?;
+    let inverse_days_tree = DB.open_tree(INVERSE_DAYS_TREE)?;
 
     let contents = fs::read_to_string("data/games.json")?;
     let games: GameData = serde_json::from_str(&contents)?;
@@ -116,6 +118,7 @@ fn cache_season_days() -> Result<(), anyhow::Error> {
                     day: data.day,
                 };
                 days_tree.insert(key.as_bytes(), start_time.to_rfc3339().as_bytes())?;
+                inverse_days_tree.insert(start_time.to_rfc3339().as_bytes(), key.as_bytes())?;
             }
         }
     })
