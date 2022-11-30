@@ -69,6 +69,7 @@ h1 {
 
 .board-container,
 .index-list {
+    min-width: min(var(--section-width), 100vw - 2.5rem);
     width: var(--section-width);
     box-sizing: border-box;
 }
@@ -241,7 +242,7 @@ ol {
 
 section {
     box-sizing: border-box;
-    min-width: var(--section-width);
+    min-width: min(var(--section-width), 100vw - 2.5rem);
     width: 100%;
 }
 
