@@ -32,11 +32,16 @@ header {
     box-sizing: border-box;
 }
 
-.home_link {
-    margin-block: 0.825rem;
+header > * {
+    align-self: center;
 }
 
-.home_link > h1 {
+.home-link {
+    margin-block: 0.825rem;
+    flex-grow: 1;
+}
+
+.home-link > h1 {
     height: min-content;
     margin-block: 0;
 }

@@ -17,7 +17,7 @@
 {% endmacro %}
 
 <!-- prettier-ignore -->
-{% block content%}
+{% block content %}
 <main class="centered-section board-container">
     <!-- prettier-ignore -->
     {% for (timestamp, board) in boards %}
@@ -82,4 +82,9 @@
     <!-- prettier-ignore -->
     {% endfor %}
 </main>
+{% endblock %}
+
+<!-- prettier-ignore -->
+{% block additional_headers %}
+<a href="https://reblase.sibr.dev/season/{{season+1}}/" class="reblase-link">Reblase</a>
 {% endblock %}

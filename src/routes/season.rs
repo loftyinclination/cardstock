@@ -28,6 +28,7 @@ fn load_season(season: i16, limit: Option<u16>) -> Result<Option<SeasonPage>, an
     let inverse_days_tree = DB.open_tree(INVERSE_DAYS_TREE)?;
 
     let page_content = SeasonPage {
+        season: season,
         boards: convert_db_contents_into_format_for_page(
             idols_tree.range(
                 timestamp_of_first_day.to_rfc3339().as_bytes()
@@ -45,5 +46,6 @@ fn load_season(season: i16, limit: Option<u16>) -> Result<Option<SeasonPage>, an
 #[derive(Template)]
 #[template(path = "season.html")]
 struct SeasonPage {
+    season: i16,
     boards: Vec<(Timestamp, Vec<PlayerDisplayable>)>,
 }
